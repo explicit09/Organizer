@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+  --ink: #1f1a17;
+  --muted: #6a5f57;
+  --accent: #ff7a1a;
+  --accent-soft: #ffe3c7;
+  --accent-2: #1b9aaa;
+  --surface: #fff9f1;
+  --surface-2: #f2e8dd;
+  --stroke: #e5d6c7;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  font-family: var(--font-news), "Times New Roman", serif;
+  color: var(--ink);
+  background-color: var(--surface);
+  background-image:
+    radial-gradient(circle at 12% 18%, #ffe9cf 0, transparent 45%),
+    radial-gradient(circle at 82% 12%, #d8f3f1 0, transparent 38%),
+    radial-gradient(circle at 70% 80%, #f6dcc8 0, transparent 52%),
+    linear-gradient(180deg, #fff6ec 0%, #f1e6db 100%);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5 {
+  font-family: var(--font-space), "Trebuchet MS", sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
