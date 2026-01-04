@@ -1,0 +1,14 @@
+version: "3.9"
+
+services:
+  organizer:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_PATH=/app/data/organizer.db
+    volumes:
+      - organizer-data:/app/data
+
+volumes:
+  organizer-data:
