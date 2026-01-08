@@ -329,9 +329,42 @@ db.exec(`
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
     endpoint TEXT NOT NULL,
-    keys_json TEXT NOT NULL,
+    p256dh TEXT NOT NULL,
+    auth TEXT NOT NULL,
     created_at TEXT NOT NULL,
-    UNIQUE(user_id, endpoint)
+    UNIQUE(endpoint)
+  );
+
+  -- Availability Links for scheduling
+  CREATE TABLE IF NOT EXISTS availability_links (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    slug TEXT NOT NULL UNIQUE,
+    title TEXT NOT NULL,
+    description TEXT,
+    duration INTEGER DEFAULT 30,
+    buffer_before INTEGER DEFAULT 0,
+    buffer_after INTEGER DEFAULT 0,
+    available_hours_json TEXT NOT NULL DEFAULT '{"start":9,"end":17}',
+    available_days_json TEXT NOT NULL DEFAULT '[1,2,3,4,5]',
+    max_days_ahead INTEGER DEFAULT 14,
+    is_active INTEGER DEFAULT 1,
+    created_at TEXT NOT NULL,
+    expires_at TEXT
+  );
+
+  -- Bookings from availability links
+  CREATE TABLE IF NOT EXISTS bookings (
+    id TEXT PRIMARY KEY,
+    link_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    start_at TEXT NOT NULL,
+    end_at TEXT NOT NULL,
+    notes TEXT,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'cancelled')),
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (link_id) REFERENCES availability_links(id) ON DELETE CASCADE
   );
 
   CREATE INDEX IF NOT EXISTS idx_daily_plans_user_date ON daily_plans(user_id, date);
@@ -339,6 +372,10 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_habits_user ON habits(user_id);
   CREATE INDEX IF NOT EXISTS idx_habit_logs_habit ON habit_logs(habit_id);
   CREATE INDEX IF NOT EXISTS idx_ai_conversations_user ON ai_conversations(user_id);
+  CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user ON push_subscriptions(user_id);
+  CREATE INDEX IF NOT EXISTS idx_availability_links_user ON availability_links(user_id);
+  CREATE INDEX IF NOT EXISTS idx_availability_links_slug ON availability_links(slug);
+  CREATE INDEX IF NOT EXISTS idx_bookings_link ON bookings(link_id);
 `);
 
 function columnExists(table: string, column: string) {
