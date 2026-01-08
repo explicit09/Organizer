@@ -3,6 +3,11 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import type { Item, ItemType } from "../lib/items";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Label } from "@/components/ui/Label";
+import { Loader2, Plus, AlertCircle, FileText, CheckSquare, Calendar, GraduationCap, Zap } from "lucide-react";
+import { clsx } from "clsx";
 
 type PreviewItem = {
   type: ItemType;
@@ -20,6 +25,24 @@ function formatType(type: ItemType) {
   return type.charAt(0).toUpperCase() + type.slice(1);
 }
 
+const TypeIcon = ({ type }: { type: ItemType }) => {
+  switch (type) {
+    case 'task': return <CheckSquare size={16} />;
+    case 'meeting': return <Calendar size={16} />;
+    case 'school': return <GraduationCap size={16} />;
+    default: return <FileText size={16} />;
+  }
+};
+
+const getTypeColor = (type: ItemType) => {
+  switch (type) {
+    case 'task': return "text-purple-400 bg-purple-500/10 border-purple-500/20";
+    case 'meeting': return "text-amber-400 bg-amber-500/10 border-amber-500/20";
+    case 'school': return "text-emerald-400 bg-emerald-500/10 border-emerald-500/20";
+    default: return "text-muted-foreground bg-white/[0.04] border-white/[0.08]";
+  }
+}
+
 export function CreateItemForm({ compact, onCreated }: CreateItemFormProps) {
   const router = useRouter();
   const [text, setText] = useState("");
@@ -34,6 +57,8 @@ export function CreateItemForm({ compact, onCreated }: CreateItemFormProps) {
 
   async function handlePreview(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!text) return;
+
     setError(null);
     setCreated(null);
     setDuplicates(null);
@@ -85,6 +110,8 @@ export function CreateItemForm({ compact, onCreated }: CreateItemFormProps) {
       setDuplicates((body.duplicates as Item[]) ?? null);
       onCreated?.(body.items as Item[]);
       router.refresh();
+
+      // Keep feedback visible for a moment
     } catch (err) {
       setError(err instanceof Error ? err.message : "Create failed");
     } finally {
@@ -101,106 +128,112 @@ export function CreateItemForm({ compact, onCreated }: CreateItemFormProps) {
   }
 
   return (
-    <form
-      onSubmit={handlePreview}
-      className={`flex flex-col gap-4 ${compact ? "text-sm" : ""}`}
-    >
-      <div className="flex flex-col gap-2">
-        <label className="text-xs uppercase tracking-[0.3em] text-stone-500">
+    <form onSubmit={handlePreview} className={clsx("flex flex-col gap-5", compact ? "text-sm" : "")}>
+      <div className="flex flex-col gap-3">
+        <Label className="flex items-center gap-2">
+          <Zap size={14} className="text-primary" />
           Quick Add
-        </label>
-        <input
-          className="rounded-2xl border border-stone-200/70 bg-white px-4 py-3 text-sm text-stone-700 outline-none"
-          placeholder="Example: Prep for finance exam next week"
-          value={text}
-          onChange={(event) => handleChange(event.target.value)}
-        />
-      </div>
-
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="submit"
-          disabled={!text || isPreviewing}
-          className="rounded-2xl border border-stone-200/80 bg-white px-4 py-2 text-sm font-semibold text-stone-700 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {isPreviewing ? "Previewing..." : "Preview"}
-        </button>
-        <button
-          type="button"
-          onClick={handleCreate}
-          disabled={!hasPreview || isCreating}
-          className="rounded-2xl bg-stone-900 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {isCreating ? "Creating..." : "Confirm & Create"}
-        </button>
-      </div>
-
-      {error ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">
-          {error}
+        </Label>
+        <div className="flex gap-3">
+          <Input
+            className="flex-1 shadow-inner bg-black/20"
+            placeholder="e.g. 'Meeting with team at 2pm tomorrow'"
+            value={text}
+            onChange={(event) => handleChange(event.target.value)}
+            disabled={isPreviewing || isCreating}
+            autoFocus
+          />
+          <Button
+            type="submit"
+            disabled={!text || isPreviewing || !!hasPreview}
+            variant="neon"
+            size="icon"
+            className="h-11 w-12 shrink-0 rounded-xl"
+          >
+            {isPreviewing ? <Loader2 className="animate-spin" size={18} /> : <Plus size={20} />}
+          </Button>
         </div>
-      ) : null}
+      </div>
 
-      {hasPreview ? (
-        <div className="rounded-2xl border border-dashed border-stone-200 bg-stone-50 px-4 py-3 text-xs text-stone-600">
-          <div className="text-xs uppercase tracking-[0.3em] text-stone-400">
-            Preview
+      {hasPreview && (
+        <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="flex items-center justify-between">
+            <Label className="text-muted-foreground uppercase tracking-widest text-[10px]">Preview ({preview?.length})</Label>
+            <Button
+              type="button"
+              onClick={handleCreate}
+              disabled={isCreating}
+              variant="default"
+              size="sm"
+              className="h-8 text-xs font-semibold px-4 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_20px_rgba(16,185,129,0.5)] border-emerald-400/20"
+            >
+              {isCreating && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
+              Confirm & Create
+            </Button>
           </div>
-          <div className="mt-3 grid gap-2">
+
+          <div className="grid gap-3">
             {preview?.map((item, index) => (
               <div
                 key={`${item.title}-${index}`}
-                className="flex items-center justify-between rounded-xl bg-white px-3 py-2 text-sm text-stone-700 shadow-sm"
+                className="group flex items-start gap-4 rounded-xl border border-white/5 bg-white/[0.02] p-4 text-sm transition-all hover:bg-white/[0.05] hover:border-white/10 hover:scale-[1.01]"
               >
-                <div className="flex flex-col">
-                  <span>{item.title}</span>
-                  {item.subtasks && item.subtasks.length > 0 ? (
-                    <span className="text-[10px] uppercase tracking-[0.3em] text-stone-400">
-                      {item.subtasks.length} subtasks
-                    </span>
-                  ) : null}
+                <div className={clsx("p-2 rounded-lg shrink-0", getTypeColor(item.type))}>
+                  <TypeIcon type={item.type} />
                 </div>
-                <span className="text-xs uppercase tracking-[0.2em] text-stone-400">
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-white group-hover:text-primary transition-colors">{item.title}</div>
+                  {item.subtasks && item.subtasks.length > 0 && (
+                    <div className="mt-2 flex gap-2">
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground bg-white/5 px-2 py-0.5 rounded border border-white/5">
+                        {item.subtasks.length} subtasks
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground self-center px-2 py-1 bg-white/5 rounded">
                   {formatType(item.type)}
-                </span>
+                </div>
               </div>
             ))}
           </div>
         </div>
-      ) : null}
+      )}
 
-      {created && created.length > 0 ? (
-        <div className="rounded-2xl border border-stone-200 bg-white px-4 py-3">
-          <div className="text-xs uppercase tracking-[0.3em] text-stone-400">
-            Created items
+      {error && (
+        <div className="flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-xs text-red-400 animate-in fade-in">
+          <AlertCircle size={14} />
+          {error}
+        </div>
+      )}
+
+      {created && created.length > 0 && (
+        <div className="animate-in fade-in slide-in-from-top-2 p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
+          <div className="mb-2 flex items-center gap-2">
+            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400">
+              <CheckSquare size={12} />
+            </div>
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">Added successfully</span>
           </div>
-          <div className="mt-3 grid gap-2 text-sm text-stone-700">
-            {created.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center justify-between rounded-xl border border-stone-200/70 px-3 py-2"
-              >
-                <span>{item.title}</span>
-                <span className="text-xs uppercase tracking-[0.2em] text-stone-400">
-                  {formatType(item.type)}
-                </span>
-              </div>
+          <div className="space-y-1 pl-7">
+            {created.map(item => (
+              <div key={item.id} className="text-xs text-muted-foreground hover:text-white transition-colors cursor-default">• {item.title}</div>
             ))}
           </div>
         </div>
-      ) : null}
-      {duplicates && duplicates.length > 0 ? (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
-          <div className="text-xs uppercase tracking-[0.3em] text-amber-600">
+      )}
+
+      {duplicates && duplicates.length > 0 && (
+        <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-xs text-amber-400 p-4">
+          <div className="mb-2 font-bold uppercase tracking-wider flex items-center gap-2">
+            <AlertCircle size={14} />
             Duplicates detected
           </div>
-          <div className="mt-2 grid gap-1">
-            {duplicates.map((item) => (
-              <div key={item.id}>{item.title}</div>
-            ))}
-          </div>
+          {duplicates.map((item) => (
+            <div key={item.id} className="opacity-80 pl-6">• {item.title}</div>
+          ))}
         </div>
-      ) : null}
+      )}
     </form>
   );
 }

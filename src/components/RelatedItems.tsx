@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import type { Item } from "../lib/items";
+import { CheckSquare, Calendar, GraduationCap, FileText, Link2 } from "lucide-react";
+import { clsx } from "clsx";
 
 type RelatedItem = {
   item: Item;
@@ -33,38 +35,45 @@ export function RelatedItems({ itemId, limit = 5 }: RelatedItemsProps) {
   if (loading) {
     return <div className="animate-pulse space-y-2">
       {[1, 2, 3].map((i) => (
-        <div key={i} className="h-12 rounded-lg bg-stone-100" />
+        <div key={i} className="h-12 rounded-lg bg-white/5" />
       ))}
     </div>;
   }
 
   if (related.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-stone-200 bg-stone-50 px-3 py-3 text-xs text-stone-500">
+      <div className="rounded-lg border border-dashed border-white/10 bg-white/5 px-3 py-3 text-xs text-muted-foreground flex items-center justify-center gap-2">
+        <Link2 size={12} />
         No related items found.
       </div>
     );
   }
 
-  const typeIcon = (type: string) => {
-    if (type === "task") return "✓";
-    if (type === "meeting") return "📅";
-    if (type === "school") return "📚";
-    return "•";
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case "task": return <CheckSquare size={16} className="text-purple-400" />;
+      case "meeting": return <Calendar size={16} className="text-amber-400" />;
+      case "school": return <GraduationCap size={16} className="text-emerald-400" />;
+      default: return <FileText size={16} className="text-blue-400" />;
+    }
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       {related.map(({ item, reasons }) => (
         <div
           key={item.id}
-          className="flex items-start gap-2 rounded-lg border border-stone-200 bg-white p-3 text-sm hover:bg-stone-50 transition-colors cursor-pointer"
+          className="flex items-start gap-3 rounded-lg border border-white/[0.04] bg-[#09090b] px-3 py-2.5 hover:border-white/[0.08] hover:bg-white/[0.02] transition-colors cursor-pointer group"
         >
-          <span className="text-base">{typeIcon(item.type)}</span>
+          <div className="mt-0.5 shrink-0">{getTypeIcon(item.type)}</div>
           <div className="flex-1 min-w-0">
-            <div className="font-medium text-stone-900 truncate">{item.title}</div>
-            <div className="text-xs text-stone-500 mt-0.5">
-              {reasons.slice(0, 2).join(" · ")}
+            <div className="text-sm font-medium text-white truncate group-hover:text-primary transition-colors">{item.title}</div>
+            <div className="flex flex-wrap gap-1 mt-1">
+              {reasons.slice(0, 2).map((reason, i) => (
+                <span key={i} className="text-[9px] text-muted-foreground bg-white/[0.04] px-1.5 py-0.5 rounded">
+                  {reason}
+                </span>
+              ))}
             </div>
           </div>
         </div>

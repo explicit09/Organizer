@@ -2,6 +2,11 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Label } from "@/components/ui/Label";
+import { GraduationCap, CheckCircle2, AlertCircle } from "lucide-react";
 
 export function CreateCourseForm() {
   const router = useRouter();
@@ -35,6 +40,7 @@ export function CreateCourseForm() {
       setInstructor("");
       setStatus("Course added");
       router.refresh();
+      setTimeout(() => setStatus(null), 3000);
     } catch (err) {
       setStatus(err instanceof Error ? err.message : "Course creation failed");
     } finally {
@@ -43,47 +49,66 @@ export function CreateCourseForm() {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="rounded-3xl border border-stone-200/70 bg-white/80 p-6 shadow-[0_16px_40px_-30px_rgba(20,20,20,0.5)] backdrop-blur"
-    >
-      <div className="text-xs uppercase tracking-[0.3em] text-stone-400">
-        Add course
-      </div>
-      <div className="mt-4 grid gap-3">
-        <input
-          className="w-full rounded-2xl border border-stone-200/70 bg-white px-4 py-3 text-sm text-stone-700 outline-none"
-          placeholder="Course name"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-        />
-        <div className="grid gap-3 md:grid-cols-2">
-          <input
-            className="w-full rounded-2xl border border-stone-200/70 bg-white px-4 py-3 text-sm text-stone-700 outline-none"
-            placeholder="Term"
-            value={term}
-            onChange={(event) => setTerm(event.target.value)}
-          />
-          <input
-            className="w-full rounded-2xl border border-stone-200/70 bg-white px-4 py-3 text-sm text-stone-700 outline-none"
-            placeholder="Instructor"
-            value={instructor}
-            onChange={(event) => setInstructor(event.target.value)}
-          />
+    <Card className="p-6">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
+            <GraduationCap size={20} />
+          </div>
+          <div>
+            <h3 className="font-display font-semibold text-white">Add Course</h3>
+            <p className="text-xs text-muted-foreground">Track your academic progress</p>
+          </div>
         </div>
-        <button
+
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <Label>Course Name</Label>
+            <Input
+              placeholder="e.g. Advanced Calculus"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+            />
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="space-y-1">
+              <Label>Term</Label>
+              <Input
+                placeholder="e.g. Fall 2024"
+                value={term}
+                onChange={(event) => setTerm(event.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Instructor</Label>
+              <Input
+                placeholder="e.g. Prof. Smith"
+                value={instructor}
+                onChange={(event) => setInstructor(event.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+
+        <Button
           type="submit"
           disabled={!name || isSubmitting}
-          className="rounded-2xl bg-stone-900 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-2"
         >
-          {isSubmitting ? "Adding..." : "Add course"}
-        </button>
-        {status ? (
-          <div className="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-xs text-stone-600">
+          {isSubmitting ? "Adding..." : "Add Course"}
+        </Button>
+
+        {status && (
+          <div className={`flex items-center gap-2 rounded-lg border px-4 py-3 text-xs ${status === "Course added"
+              ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
+              : "border-rose-500/20 bg-rose-500/10 text-rose-400"
+            }`}>
+            {status === "Course added" ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
             {status}
           </div>
-        ) : null}
-      </div>
-    </form>
+        )}
+      </form>
+    </Card>
   );
 }

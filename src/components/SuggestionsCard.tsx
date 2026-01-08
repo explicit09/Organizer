@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AlertCircle, Calendar, Split, ListChecks, CheckCircle2, Zap } from "lucide-react";
+import { clsx } from "clsx";
 
 type Suggestion = {
   type: "reschedule" | "break_down" | "prioritize" | "delegate" | "review";
@@ -33,28 +35,45 @@ export function SuggestionsCard() {
   }, []);
 
   if (loading) {
-    return <div className="animate-pulse rounded-2xl bg-stone-100 h-24" />;
+    return <div className="animate-pulse rounded-2xl bg-white/5 h-24" />;
+  }
+
+  const getIcon = (type: string) => {
+    switch (type) {
+      case 'overload': return <Zap size={16} className="text-amber-400" />;
+      case 'conflict': return <AlertCircle size={16} className="text-rose-400" />;
+      case 'deadline_cluster': return <Calendar size={16} className="text-rose-400" />;
+      case 'prioritize': return <Zap size={16} className="text-amber-400" />;
+      case 'break_down': return <Split size={16} className="text-blue-400" />;
+      case 'reschedule': return <Calendar size={16} className="text-orange-400" />;
+      default: return <ListChecks size={16} className="text-muted-foreground" />;
+    }
   }
 
   const allItems = [
     ...warnings.map((w) => ({
-      icon: w.type === "overload" ? "⚠️" : w.type === "conflict" ? "🔴" : "📅",
+      icon: getIcon(w.type),
       message: w.message,
       priority: "high" as const,
-      type: "warning",
+      type: w.type,
+      isWarning: true
     })),
     ...suggestions.map((s) => ({
-      icon: s.type === "prioritize" ? "🔥" : s.type === "break_down" ? "✂️" : s.type === "reschedule" ? "📆" : "📋",
+      icon: getIcon(s.type),
       message: s.message,
       priority: s.priority,
-      type: "suggestion",
+      type: s.type,
+      isWarning: false
     })),
   ];
 
   if (allItems.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-emerald-200 bg-emerald-50 px-4 py-4 text-xs text-emerald-700">
-        All good! No suggestions or warnings at the moment.
+      <div className="rounded-xl border border-dashed border-emerald-500/20 bg-emerald-500/5 px-4 py-6 text-center text-xs text-emerald-400 flex flex-col items-center gap-2">
+        <div className="h-8 w-8 rounded-full bg-emerald-500/10 flex items-center justify-center">
+          <CheckCircle2 size={16} />
+        </div>
+        All good! No suggestions at the moment.
       </div>
     );
   }
@@ -67,20 +86,21 @@ export function SuggestionsCard() {
       {sorted.slice(0, 5).map((item, i) => (
         <div
           key={i}
-          className={`flex items-start gap-3 rounded-xl p-3 text-sm ${
+          className={clsx(
+            "flex items-start gap-3 rounded-xl p-3 text-sm border transition-colors",
             item.priority === "high"
-              ? "bg-rose-50 text-rose-800"
+              ? "bg-rose-500/5 border-rose-500/10 text-rose-200"
               : item.priority === "medium"
-              ? "bg-amber-50 text-amber-800"
-              : "bg-stone-50 text-stone-700"
-          }`}
+                ? "bg-amber-500/5 border-amber-500/10 text-amber-200"
+                : "bg-white/5 border-white/5 text-muted-foreground"
+          )}
         >
-          <span className="text-base">{item.icon}</span>
-          <span>{item.message}</span>
+          <div className="mt-0.5 shrink-0">{item.icon}</div>
+          <span className="leading-snug text-xs">{item.message}</span>
         </div>
       ))}
       {sorted.length > 5 && (
-        <div className="text-xs text-stone-500 text-center pt-1">
+        <div className="text-[10px] text-muted-foreground text-center pt-2 uppercase tracking-wider">
           +{sorted.length - 5} more suggestions
         </div>
       )}

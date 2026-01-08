@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { clsx } from "clsx";
+import { Card } from "@/components/ui/Card";
+import { Clock, PieChart } from "lucide-react";
 
 type TimeAllocation = {
   type: string;
@@ -25,10 +28,10 @@ type AllocationData = {
   byDay: DayAllocation[];
 };
 
-const typeColors: Record<string, { bar: string; text: string }> = {
-  task: { bar: "bg-stone-900", text: "text-stone-900" },
-  meeting: { bar: "bg-amber-500", text: "text-amber-600" },
-  school: { bar: "bg-teal-500", text: "text-teal-600" },
+const typeStyles: Record<string, { bar: string; text: string; bg: string }> = {
+  task: { bar: "bg-purple-500", text: "text-purple-400", bg: "bg-purple-500/10" },
+  meeting: { bar: "bg-amber-500", text: "text-amber-400", bg: "bg-amber-500/10" },
+  school: { bar: "bg-emerald-500", text: "text-emerald-400", bg: "bg-emerald-500/10" },
 };
 
 function formatMinutes(minutes: number) {
@@ -54,12 +57,12 @@ export function TimeAllocationChart() {
   }, []);
 
   if (loading) {
-    return <div className="animate-pulse rounded-2xl bg-stone-100 h-40" />;
+    return <div className="animate-pulse rounded-2xl bg-white/5 h-64" />;
   }
 
   if (!data || data.totalItems === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-stone-200 bg-stone-50 px-4 py-4 text-xs text-stone-500">
+      <div className="rounded-xl border border-dashed border-white/10 bg-white/5 px-4 py-8 text-center text-xs text-muted-foreground">
         No time data available. Add items to see allocation.
       </div>
     );
@@ -68,61 +71,75 @@ export function TimeAllocationChart() {
   const maxDayMinutes = Math.max(...data.byDay.map((d) => d.totalMinutes), 1);
 
   return (
-    <div className="space-y-6">
-      {/* Total time */}
-      <div className="text-center">
-        <div className="text-3xl font-semibold text-stone-900">
-          {formatMinutes(data.totalEstimatedMinutes)}
+    <Card className="p-6 h-full flex flex-col justify-between">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400">
+            <PieChart size={20} />
+          </div>
+          <div>
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Total Load</div>
+            <div className="text-2xl font-bold font-display text-white tracking-tight">
+              {formatMinutes(data.totalEstimatedMinutes)}
+            </div>
+          </div>
         </div>
-        <div className="text-xs uppercase tracking-wider text-stone-400">
-          Total estimated time
+        <div className="text-right">
+          <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Items</div>
+          <div className="text-2xl font-bold font-display text-white tracking-tight">
+            {data.totalItems}
+          </div>
         </div>
       </div>
 
       {/* Type breakdown */}
-      <div className="space-y-3">
-        {data.allocations.map((alloc) => (
-          <div key={alloc.type}>
-            <div className="flex justify-between text-xs mb-1">
-              <span className={`uppercase tracking-wider ${typeColors[alloc.type]?.text ?? "text-stone-500"}`}>
-                {alloc.type}
-              </span>
-              <span className="text-stone-500">
-                {alloc.count} items · {formatMinutes(alloc.estimatedMinutes)}
-              </span>
+      <div className="space-y-4 mb-6">
+        {data.allocations.map((alloc) => {
+          const style = typeStyles[alloc.type] ?? { bar: "bg-gray-500", text: "text-gray-400", bg: "bg-gray-500/10" };
+          return (
+            <div key={alloc.type} className="group cursor-default">
+              <div className="flex justify-between text-[10px] uppercase tracking-wider font-medium mb-1.5 opacity-70 group-hover:opacity-100 transition-opacity">
+                <span className={style.text}>{alloc.type}</span>
+                <span className="text-white">{formatMinutes(alloc.estimatedMinutes)}</span>
+              </div>
+              <div className="h-1.5 w-full rounded-full bg-white/5 overflow-hidden">
+                <div
+                  className={clsx("h-full rounded-full transition-all duration-700 ease-out shadow-[0_0_10px_currentColor]", style.bar)}
+                  style={{ width: `${alloc.percentage}%`, color: "inherit" }}
+                />
+              </div>
             </div>
-            <div className="h-2 w-full rounded-full bg-stone-100">
-              <div
-                className={`h-2 rounded-full ${typeColors[alloc.type]?.bar ?? "bg-stone-400"}`}
-                style={{ width: `${alloc.percentage}%` }}
-              />
-            </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       {/* Daily chart */}
-      <div>
-        <div className="text-xs uppercase tracking-wider text-stone-400 mb-2">
-          Last 7 days
-        </div>
-        <div className="flex items-end gap-1 h-16">
-          {data.byDay.map((day) => {
-            const height = (day.totalMinutes / maxDayMinutes) * 100;
-            const dayName = new Date(day.date).toLocaleDateString("en-US", { weekday: "short" });
-            return (
-              <div key={day.date} className="flex-1 flex flex-col items-center">
-                <div
-                  className="w-full rounded-t bg-stone-900 transition-all"
-                  style={{ height: `${Math.max(height, 4)}%` }}
-                  title={`${dayName}: ${formatMinutes(day.totalMinutes)}`}
-                />
-                <span className="text-[10px] text-stone-400 mt-1">{dayName.charAt(0)}</span>
+      <div className="flex items-end justify-between gap-2 h-24 pt-4 border-t border-white/5">
+        {data.byDay.map((day) => {
+          const height = (day.totalMinutes / maxDayMinutes) * 100;
+          const dayName = new Date(day.date).toLocaleDateString("en-US", { weekday: "short" });
+          const isToday = new Date(day.date).toDateString() === new Date().toDateString();
+
+          return (
+            <div key={day.date} className="flex-1 flex flex-col items-center group relative h-full justify-end">
+              <div
+                className={clsx(
+                  "w-full rounded-t-sm transition-all duration-300 relative min-h-[4px]",
+                  isToday ? "bg-primary shadow-[0_0_15px_var(--primary)]" : "bg-white/10 group-hover:bg-white/20"
+                )}
+                style={{ height: `${Math.max(height, 5)}%` }}
+              >
+                <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/80 backdrop-blur border border-white/10 text-white text-[10px] px-2 py-1 rounded whitespace-nowrap z-20 pointer-events-none">
+                  {formatMinutes(day.totalMinutes)}
+                </div>
               </div>
-            );
-          })}
-        </div>
+              <span className={clsx("text-[9px] mt-2 uppercase tracking-wide", isToday ? "text-primary font-bold" : "text-muted-foreground")}>
+                {dayName.charAt(0)}
+              </span>
+            </div>
+          );
+        })}
       </div>
-    </div>
+    </Card>
   );
 }

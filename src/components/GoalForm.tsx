@@ -2,6 +2,11 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Label } from "@/components/ui/Label";
+import { Target, CheckCircle2, AlertCircle } from "lucide-react";
 
 export function GoalForm() {
   const router = useRouter();
@@ -35,6 +40,7 @@ export function GoalForm() {
       setUnit("");
       setStatus("Goal added");
       router.refresh();
+      setTimeout(() => setStatus(null), 3000);
     } catch (err) {
       setStatus(err instanceof Error ? err.message : "Goal creation failed");
     } finally {
@@ -43,47 +49,62 @@ export function GoalForm() {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="rounded-3xl border border-stone-200/70 bg-white/80 p-6 shadow-[0_16px_40px_-30px_rgba(20,20,20,0.5)] backdrop-blur"
-    >
-      <div className="text-xs uppercase tracking-[0.3em] text-stone-400">
-        Add goal
-      </div>
-      <div className="mt-4 grid gap-3">
-        <input
-          className="w-full rounded-2xl border border-stone-200/70 bg-white px-4 py-3 text-sm text-stone-700 outline-none"
-          placeholder="Goal title"
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-        />
-        <div className="grid gap-3 md:grid-cols-2">
-          <input
-            className="w-full rounded-2xl border border-stone-200/70 bg-white px-4 py-3 text-sm text-stone-700 outline-none"
-            placeholder="Target (optional)"
-            value={target}
-            onChange={(event) => setTarget(event.target.value)}
-          />
-          <input
-            className="w-full rounded-2xl border border-stone-200/70 bg-white px-4 py-3 text-sm text-stone-700 outline-none"
-            placeholder="Unit (e.g. tasks)"
-            value={unit}
-            onChange={(event) => setUnit(event.target.value)}
-          />
+    <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div className="flex items-center gap-3 mb-1">
+          <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-rose-500/10 text-rose-400">
+            <Target size={18} />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-white">Add Goal</h3>
+            <p className="text-xs text-muted-foreground">Set a new objective</p>
+          </div>
         </div>
-        <button
-          type="submit"
-          disabled={!title || isSubmitting}
-          className="rounded-2xl bg-stone-900 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {isSubmitting ? "Adding..." : "Add goal"}
-        </button>
-        {status ? (
-          <div className="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-xs text-stone-600">
+
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>Goal Title</Label>
+            <Input
+              placeholder="e.g. Read 12 Books"
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+            />
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Target Value</Label>
+              <Input
+                placeholder="e.g. 12"
+                value={target}
+                onChange={(event) => setTarget(event.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Unit</Label>
+              <Input
+                placeholder="e.g. books"
+                value={unit}
+                onChange={(event) => setUnit(event.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+
+        <Button type="submit" disabled={!title || isSubmitting}>
+          {isSubmitting ? "Adding..." : "Add Goal"}
+        </Button>
+
+        {status && (
+          <div className={`flex items-center gap-2 rounded-lg border px-4 py-3 text-xs ${status === "Goal added"
+              ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
+              : "border-rose-500/20 bg-rose-500/10 text-rose-400"
+            }`}>
+            {status === "Goal added" ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
             {status}
           </div>
-        ) : null}
-      </div>
-    </form>
+        )}
+      </form>
+    </div>
   );
 }

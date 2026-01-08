@@ -1,6 +1,11 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Label } from "@/components/ui/Label";
+import { Calendar, CheckCircle2, AlertCircle, Mail } from "lucide-react";
 
 function toUtcIso(value: string) {
   if (!value) {
@@ -52,6 +57,7 @@ export function OutlookEventForm() {
       setStart("");
       setEnd("");
       setAttendees("");
+      setTimeout(() => setStatus(null), 3000);
     } catch (err) {
       setStatus(err instanceof Error ? err.message : "Scheduling failed");
     } finally {
@@ -60,72 +66,79 @@ export function OutlookEventForm() {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="flex flex-col gap-4 rounded-3xl border border-stone-200/70 bg-white/80 p-6 shadow-[0_16px_40px_-30px_rgba(20,20,20,0.5)] backdrop-blur"
-    >
-      <div>
-        <label className="text-xs uppercase tracking-[0.3em] text-stone-500">
-          Subject
-        </label>
-        <input
-          aria-label="Subject"
-          className="mt-2 w-full rounded-2xl border border-stone-200/70 bg-white px-4 py-3 text-sm text-stone-700 outline-none"
-          value={subject}
-          onChange={(event) => setSubject(event.target.value)}
-          placeholder="LEARN-X roadmap sync"
-        />
-      </div>
-      <div className="grid gap-3 md:grid-cols-2">
-        <div>
-          <label className="text-xs uppercase tracking-[0.3em] text-stone-500">
-            Start time
-          </label>
-          <input
-            aria-label="Start time"
-            type="datetime-local"
-            className="mt-2 w-full rounded-2xl border border-stone-200/70 bg-white px-4 py-3 text-sm text-stone-700 outline-none"
-            value={start}
-            onChange={(event) => setStart(event.target.value)}
-          />
+    <Card className="p-6">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400">
+            <Calendar size={20} />
+          </div>
+          <div>
+            <h3 className="font-display font-semibold text-white">Schedule Event</h3>
+            <p className="text-xs text-muted-foreground">Add to Outlook Calendar</p>
+          </div>
         </div>
-        <div>
-          <label className="text-xs uppercase tracking-[0.3em] text-stone-500">
-            End time
-          </label>
-          <input
-            aria-label="End time"
-            type="datetime-local"
-            className="mt-2 w-full rounded-2xl border border-stone-200/70 bg-white px-4 py-3 text-sm text-stone-700 outline-none"
-            value={end}
-            onChange={(event) => setEnd(event.target.value)}
-          />
+
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <Label>Subject</Label>
+            <Input
+              placeholder="e.g. Team Sync"
+              value={subject}
+              onChange={(event) => setSubject(event.target.value)}
+            />
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="space-y-1">
+              <Label>Start Time</Label>
+              <Input
+                type="datetime-local"
+                value={start}
+                onChange={(event) => setStart(event.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>End Time</Label>
+              <Input
+                type="datetime-local"
+                value={end}
+                onChange={(event) => setEnd(event.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <Label>Attendees</Label>
+            <div className="relative">
+              <Input
+                className="pl-9"
+                placeholder="teammate@example.com, boss@example.com"
+                value={attendees}
+                onChange={(event) => setAttendees(event.target.value)}
+              />
+              <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            </div>
+          </div>
         </div>
-      </div>
-      <div>
-        <label className="text-xs uppercase tracking-[0.3em] text-stone-500">
-          Attendees
-        </label>
-        <input
-          aria-label="Attendees"
-          className="mt-2 w-full rounded-2xl border border-stone-200/70 bg-white px-4 py-3 text-sm text-stone-700 outline-none"
-          value={attendees}
-          onChange={(event) => setAttendees(event.target.value)}
-          placeholder="person@example.com, teammate@example.com"
-        />
-      </div>
-      <button
-        type="submit"
-        disabled={!subject || !start || !end || isSubmitting}
-        className="rounded-2xl bg-stone-900 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {isSubmitting ? "Scheduling..." : "Schedule in Outlook"}
-      </button>
-      {status ? (
-        <div className="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-xs text-stone-600">
-          {status}
-        </div>
-      ) : null}
-    </form>
+
+        <Button
+          type="submit"
+          disabled={!subject || !start || !end || isSubmitting}
+          className="mt-2"
+        >
+          {isSubmitting ? "Scheduling..." : "Schedule in Outlook"}
+        </Button>
+
+        {status && (
+          <div className={`flex items-center gap-2 rounded-lg border px-4 py-3 text-xs ${status === "Scheduled in Outlook"
+              ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
+              : "border-rose-500/20 bg-rose-500/10 text-rose-400"
+            }`}>
+            {status === "Scheduled in Outlook" ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
+            {status}
+          </div>
+        )}
+      </form>
+    </Card>
   );
 }

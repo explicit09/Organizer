@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { CheckSquare, Calendar, GraduationCap, Repeat, ArrowRight, Loader2, Sparkles } from "lucide-react";
+import { clsx } from "clsx";
 
 type RecurringTemplate = {
   id: string;
@@ -51,30 +55,40 @@ export function RecurringItemsManager() {
       const data = await res.json();
 
       if (res.ok) {
-        alert(`Generated ${data.count} recurring instances!`);
         router.refresh();
       } else {
-        alert(`Error: ${data.error}`);
+        console.error(data.error);
       }
     } catch {
-      alert("Failed to generate instances");
+      console.error("Failed to generate instances");
     } finally {
       setGenerating(null);
     }
   };
 
-  const typeIcon = (type: string) => {
-    if (type === "task") return "✓";
-    if (type === "meeting") return "📅";
-    if (type === "school") return "📚";
-    return "•";
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case "task": return <CheckSquare size={18} />;
+      case "meeting": return <Calendar size={18} />;
+      case "school": return <GraduationCap size={18} />;
+      default: return <Repeat size={18} />;
+    }
   };
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case "task": return "text-purple-400 bg-purple-500/10";
+      case "meeting": return "text-amber-400 bg-amber-500/10";
+      case "school": return "text-emerald-400 bg-emerald-500/10";
+      default: return "text-blue-400 bg-blue-500/10";
+    }
+  }
 
   if (loading) {
     return (
       <div className="animate-pulse space-y-3">
         {[1, 2].map((i) => (
-          <div key={i} className="h-16 rounded-lg bg-stone-100" />
+          <div key={i} className="h-20 rounded-2xl bg-white/5" />
         ))}
       </div>
     );
@@ -82,42 +96,65 @@ export function RecurringItemsManager() {
 
   if (templates.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-stone-200 bg-stone-50 px-4 py-6 text-center text-sm text-stone-500">
-        No recurring items. Create an item with a recurrence rule to see it here.
+      <div className="rounded-xl border border-dashed border-white/[0.08] py-10 text-center flex flex-col items-center gap-3">
+        <Repeat size={24} className="text-muted-foreground/50" />
+        <div>
+          <h3 className="text-sm font-medium text-white">No Recurring Items</h3>
+          <p className="text-xs text-muted-foreground mt-1">Set up recurring tasks to automate your workflow.</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-3">
-      {templates.map((template) => (
-        <div
-          key={template.id}
-          className="flex items-center justify-between rounded-xl border border-stone-200 bg-white p-4"
-        >
-          <div className="flex items-start gap-3">
-            <span className="text-lg">{typeIcon(template.type)}</span>
-            <div>
-              <div className="font-medium text-stone-900">{template.title}</div>
-              <div className="text-xs text-stone-500 mt-0.5">
-                {ruleLabels[template.recurrenceRule] ?? template.recurrenceRule}
-                {template.recurrenceEnd && (
-                  <span className="ml-2">
-                    until {new Date(template.recurrenceEnd).toLocaleDateString()}
+      <div className="flex items-center gap-2 px-1">
+        <Sparkles className="text-primary" size={12} />
+        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Active Templates</span>
+      </div>
+      <div className="space-y-2">
+        {templates.map((template) => (
+          <div
+            key={template.id}
+            className="flex items-center justify-between gap-4 p-4 rounded-xl border border-white/[0.06] bg-[#0c0c0e] hover:border-white/[0.1] transition-colors group"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className={clsx("flex items-center justify-center w-9 h-9 rounded-lg shrink-0", getTypeColor(template.type))}>
+                {getTypeIcon(template.type)}
+              </div>
+              <div className="min-w-0">
+                <div className="text-sm font-medium text-white truncate">{template.title}</div>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground px-1.5 py-0.5 rounded bg-white/[0.04]">
+                    {ruleLabels[template.recurrenceRule] ?? template.recurrenceRule}
                   </span>
-                )}
+                  {template.recurrenceEnd && (
+                    <span className="text-[10px] text-muted-foreground">
+                      Until {new Date(template.recurrenceEnd).toLocaleDateString()}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
+            <Button
+              size="sm"
+              variant="default"
+              onClick={() => generateInstances(template.id)}
+              disabled={generating === template.id}
+              className="h-8 px-3 text-xs shrink-0"
+            >
+              {generating === template.id ? (
+                <Loader2 className="animate-spin" size={14} />
+              ) : (
+                <>
+                  <span>Generate</span>
+                  <ArrowRight size={12} className="ml-1" />
+                </>
+              )}
+            </Button>
           </div>
-          <button
-            onClick={() => generateInstances(template.id)}
-            disabled={generating === template.id}
-            className="rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-stone-800 disabled:opacity-50"
-          >
-            {generating === template.id ? "Generating..." : "Generate"}
-          </button>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
