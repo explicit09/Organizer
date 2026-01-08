@@ -13,6 +13,8 @@ export const itemStatusValues = [
   "blocked",
 ] as const;
 export const itemPriorityValues = ["urgent", "high", "medium", "low"] as const;
+export const lifeAreaValues = ["work", "personal", "health", "learning", "finance", "relationships", "side_projects"] as const;
+export type LifeArea = (typeof lifeAreaValues)[number];
 
 export type ItemType = (typeof itemTypeValues)[number];
 export type ItemStatus = (typeof itemStatusValues)[number];
@@ -52,6 +54,8 @@ export type Item = {
   assigneeId?: string;
   moduleId?: string;
   cycleId?: string;
+  // Life area
+  area?: LifeArea;
   createdAt: string;
   updatedAt: string;
 };
@@ -85,6 +89,8 @@ const itemCreateSchema = z.object({
   assigneeId: z.string().optional(),
   moduleId: z.string().optional(),
   cycleId: z.string().optional(),
+  // Life area
+  area: z.enum(lifeAreaValues).optional(),
 });
 
 const itemPatchSchema = itemCreateSchema.partial();
@@ -116,6 +122,7 @@ type ItemRow = {
   assignee_id: string | null;
   module_id: string | null;
   cycle_id: string | null;
+  area: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -148,6 +155,7 @@ function mapRow(row: ItemRow): Item {
     assigneeId: row.assignee_id ?? undefined,
     moduleId: row.module_id ?? undefined,
     cycleId: row.cycle_id ?? undefined,
+    area: (row.area as LifeArea) ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -170,7 +178,7 @@ export function createItem(
         estimated_minutes, parent_id, course_id, project_id,
         recurrence_rule, recurrence_end, original_item_id,
         agenda, buffer_before, buffer_after, grade, grade_weight,
-        assignee_id, module_id, cycle_id,
+        assignee_id, module_id, cycle_id, area,
         created_at, updated_at
       )
       VALUES (
@@ -178,7 +186,7 @@ export function createItem(
         @estimated_minutes, @parent_id, @course_id, @project_id,
         @recurrence_rule, @recurrence_end, @original_item_id,
         @agenda, @buffer_before, @buffer_after, @grade, @grade_weight,
-        @assignee_id, @module_id, @cycle_id,
+        @assignee_id, @module_id, @cycle_id, @area,
         @created_at, @updated_at
       )
     `
@@ -209,6 +217,7 @@ export function createItem(
     assignee_id: data.assigneeId ?? null,
     module_id: data.moduleId ?? null,
     cycle_id: data.cycleId ?? null,
+    area: data.area ?? null,
     created_at: now,
     updated_at: now,
   });
@@ -236,7 +245,7 @@ export function getItem(id: string, options?: { userId?: string }): Item {
           due_at, start_at, end_at, estimated_minutes, parent_id,
           course_id, project_id, recurrence_rule, recurrence_end, original_item_id,
           agenda, buffer_before, buffer_after, grade, grade_weight,
-          assignee_id, module_id, cycle_id,
+          assignee_id, module_id, cycle_id, area,
           created_at, updated_at
         FROM items
         WHERE id = ? AND user_id = ?
@@ -284,6 +293,7 @@ export function listItems(
           due_at, start_at, end_at, estimated_minutes, parent_id,
           course_id, project_id, recurrence_rule, recurrence_end, original_item_id,
           agenda, buffer_before, buffer_after, grade, grade_weight,
+          assignee_id, module_id, cycle_id, area,
           created_at, updated_at
         FROM items
         ${where}
@@ -364,6 +374,7 @@ export function updateItem(
         buffer_after = COALESCE(@buffer_after, buffer_after),
         grade = COALESCE(@grade, grade),
         grade_weight = COALESCE(@grade_weight, grade_weight),
+        area = COALESCE(@area, area),
         updated_at = @updated_at
       WHERE id = @id AND user_id = @user_id
     `
@@ -391,6 +402,7 @@ export function updateItem(
     buffer_after: data.bufferAfter ?? null,
     grade: data.grade ?? null,
     grade_weight: data.gradeWeight ?? null,
+    area: data.area ?? null,
     updated_at: now,
   });
 
