@@ -20,6 +20,9 @@ import {
   ChevronLeft,
   PanelLeft,
   User,
+  Sun,
+  Target,
+  Repeat,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/Avatar";
 import { clsx } from "clsx";
@@ -32,15 +35,18 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
+  { href: "/today", label: "Today", icon: Sun },
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/inbox", label: "Inbox", icon: Inbox, badgeKey: "inbox" },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
+  { href: "/habits", label: "Habits", icon: Repeat },
   { href: "/schedule", label: "Schedule", icon: CalendarDays },
   { href: "/meetings", label: "Meetings", icon: Calendar },
   { href: "/school", label: "School", icon: GraduationCap },
   { href: "/courses", label: "Courses", icon: BookOpen },
   { href: "/projects", label: "Projects", icon: Briefcase },
   { href: "/progress", label: "Progress", icon: TrendingUp },
+  { href: "/review", label: "Review", icon: Target },
   { href: "/notes", label: "Notes", icon: FileText },
 ];
 
