@@ -426,3 +426,122 @@ export function analyzeWorkload(
 
   return warnings;
 }
+
+// ========== Smart Conflict Detection ==========
+
+export type SchedulingConflictWarning = {
+  type: "overlap" | "back_to_back" | "overloaded_day" | "deadline_risk" | "buffer_conflict";
+  severity: "low" | "medium" | "high";
+  message: string;
+  suggestedAction?: string;
+  affectedItems: string[];
+};
+
+export function detectSchedulingConflicts(
+  newItem: Partial<Item>,
+  existingItems: Item[]
+): SchedulingConflictWarning[] {
+  const warnings: SchedulingConflictWarning[] = [];
+
+  if (!newItem.startAt || !newItem.endAt) {
+    return warnings;
+  }
+
+  const newStart = new Date(newItem.startAt).getTime();
+  const newEnd = new Date(newItem.endAt).getTime();
+  const newDate = newItem.startAt.split("T")[0];
+
+  // Get items on the same day
+  const sameDay = existingItems.filter((item) => {
+    if (!item.startAt) return false;
+    return item.startAt.startsWith(newDate);
+  });
+
+  // Check for direct overlaps
+  for (const item of sameDay) {
+    if (!item.startAt || !item.endAt) continue;
+
+    const itemStart = new Date(item.startAt).getTime();
+    const itemEnd = new Date(item.endAt).getTime();
+
+    // Check overlap
+    if (newStart < itemEnd && newEnd > itemStart) {
+      warnings.push({
+        type: "overlap",
+        severity: "high",
+        message: `Overlaps with "${item.title}"`,
+        suggestedAction: `Move to after ${new Date(itemEnd).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`,
+        affectedItems: [item.id],
+      });
+    }
+
+    // Check back-to-back (no buffer between meetings)
+    const gap = Math.abs(newStart - itemEnd) / 60000; // minutes
+    const gap2 = Math.abs(itemStart - newEnd) / 60000;
+    
+    if ((gap > 0 && gap <= 5) || (gap2 > 0 && gap2 <= 5)) {
+      warnings.push({
+        type: "back_to_back",
+        severity: "low",
+        message: `Back-to-back with "${item.title}" (no buffer time)`,
+        suggestedAction: "Consider adding 15 minutes buffer",
+        affectedItems: [item.id],
+      });
+    }
+
+    // Check buffer conflicts
+    const itemBufferBefore = (item.bufferBefore ?? 0) * 60000;
+    const itemBufferAfter = (item.bufferAfter ?? 0) * 60000;
+    const newBufferBefore = ((newItem as Item).bufferBefore ?? 0) * 60000;
+    const newBufferAfter = ((newItem as Item).bufferAfter ?? 0) * 60000;
+
+    if (
+      (newEnd > itemStart - itemBufferBefore && newEnd <= itemStart) ||
+      (newStart < itemEnd + itemBufferAfter && newStart >= itemEnd)
+    ) {
+      warnings.push({
+        type: "buffer_conflict",
+        severity: "medium",
+        message: `Conflicts with buffer time for "${item.title}"`,
+        suggestedAction: "Move to respect meeting buffer times",
+        affectedItems: [item.id],
+      });
+    }
+  }
+
+  // Check for overloaded day (more than 6 hours of meetings)
+  const totalMeetingMinutes = sameDay.reduce((sum, item) => {
+    if (!item.startAt || !item.endAt) return sum;
+    const duration = (new Date(item.endAt).getTime() - new Date(item.startAt).getTime()) / 60000;
+    return sum + duration;
+  }, 0);
+
+  const newDuration = (newEnd - newStart) / 60000;
+  if (totalMeetingMinutes + newDuration > 360) {
+    warnings.push({
+      type: "overloaded_day",
+      severity: "medium",
+      message: `Day would have ${Math.round((totalMeetingMinutes + newDuration) / 60)} hours of meetings`,
+      suggestedAction: "Consider scheduling on a different day",
+      affectedItems: sameDay.map((i) => i.id),
+    });
+  }
+
+  // Check deadline risk (scheduling meeting when tasks are due)
+  const dueTasks = existingItems.filter((item) => {
+    if (!item.dueAt || item.type !== "task") return false;
+    return item.dueAt.startsWith(newDate) && item.status !== "completed";
+  });
+
+  if (dueTasks.length >= 3) {
+    warnings.push({
+      type: "deadline_risk",
+      severity: "medium",
+      message: `${dueTasks.length} tasks due on this day`,
+      suggestedAction: "Ensure time for task completion",
+      affectedItems: dueTasks.map((t) => t.id),
+    });
+  }
+
+  return warnings;
+}
