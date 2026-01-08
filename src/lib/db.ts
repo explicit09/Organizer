@@ -257,6 +257,88 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_cycles_user ON cycles(user_id);
   CREATE INDEX IF NOT EXISTS idx_favorites_user ON favorites(user_id);
   CREATE INDEX IF NOT EXISTS idx_modules_project ON modules(project_id);
+
+  -- Daily Planning
+  CREATE TABLE IF NOT EXISTS daily_plans (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    date TEXT NOT NULL,
+    top_priorities_json TEXT,
+    time_blocks_json TEXT,
+    reflection_json TEXT,
+    energy_level TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    UNIQUE(user_id, date)
+  );
+
+  -- Focus Sessions (Pomodoro)
+  CREATE TABLE IF NOT EXISTS focus_sessions (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    item_id TEXT,
+    started_at TEXT NOT NULL,
+    ended_at TEXT,
+    duration_minutes INTEGER NOT NULL,
+    type TEXT NOT NULL CHECK (type IN ('focus', 'break')),
+    completed INTEGER DEFAULT 0,
+    notes TEXT,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE SET NULL
+  );
+
+  -- Habits
+  CREATE TABLE IF NOT EXISTS habits (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    frequency TEXT NOT NULL CHECK (frequency IN ('daily', 'weekly', 'weekdays', 'custom')),
+    target_count INTEGER DEFAULT 1,
+    color TEXT DEFAULT '#8b5cf6',
+    icon TEXT,
+    archived INTEGER DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS habit_logs (
+    id TEXT PRIMARY KEY,
+    habit_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    date TEXT NOT NULL,
+    count INTEGER DEFAULT 1,
+    notes TEXT,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (habit_id) REFERENCES habits(id) ON DELETE CASCADE,
+    UNIQUE(habit_id, date)
+  );
+
+  -- AI Conversation Memory
+  CREATE TABLE IF NOT EXISTS ai_conversations (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    role TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
+    content TEXT NOT NULL,
+    actions_json TEXT,
+    created_at TEXT NOT NULL
+  );
+
+  -- Push Subscriptions
+  CREATE TABLE IF NOT EXISTS push_subscriptions (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    endpoint TEXT NOT NULL,
+    keys_json TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    UNIQUE(user_id, endpoint)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_daily_plans_user_date ON daily_plans(user_id, date);
+  CREATE INDEX IF NOT EXISTS idx_focus_sessions_user ON focus_sessions(user_id);
+  CREATE INDEX IF NOT EXISTS idx_habits_user ON habits(user_id);
+  CREATE INDEX IF NOT EXISTS idx_habit_logs_habit ON habit_logs(habit_id);
+  CREATE INDEX IF NOT EXISTS idx_ai_conversations_user ON ai_conversations(user_id);
 `);
 
 function columnExists(table: string, column: string) {
@@ -288,6 +370,7 @@ ensureColumn("integrations", "user_id", "TEXT");
 ensureColumn("items", "cycle_id", "TEXT"); // Link to cycle/sprint
 ensureColumn("items", "assignee_id", "TEXT"); // Assigned user
 ensureColumn("items", "module_id", "TEXT"); // Link to module
+ensureColumn("items", "area", "TEXT"); // Life area: work, personal, health, learning, finance, relationships, side_projects
 
 export function getDb() {
   return db;
