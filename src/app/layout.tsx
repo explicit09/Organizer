@@ -27,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${jakarta.variable} ${spaceGrotesk.variable} antialiased bg-background text-foreground`}
+        className={`${jakarta.variable} ${spaceGrotesk.variable} antialiased bg-background bg-aurora text-foreground min-h-screen selection:bg-primary selection:text-primary-foreground`}
       >
         {children}
       </body>

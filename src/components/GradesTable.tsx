@@ -132,73 +132,89 @@ export function GradesTable() {
   };
 
   return (
-    <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+    <div className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
       {grades.map((course) => (
         <div
           key={course.courseId}
           className={clsx(
-            "rounded-xl border border-white/[0.06] bg-[#0c0c0e] overflow-hidden flex flex-col transition-all duration-200 hover:border-white/[0.1]",
-            course.averageGrade !== null && course.averageGrade >= 90 && "border-emerald-500/20"
+            "rounded-2xl border transition-all duration-300 group hover:-translate-y-1 hover:shadow-2xl",
+            course.averageGrade !== null && course.averageGrade >= 90
+              ? "border-emerald-500/30 bg-emerald-500/[0.03] shadow-[0_0_40px_-10px_rgba(16,185,129,0.1)]"
+              : "border-white/[0.05] glass-heavy"
           )}
         >
           {/* Header Area */}
-          <div className="p-5">
-            <div className="flex justify-between items-start gap-4">
+          <div className="p-6 relative overflow-hidden">
+            {/* Background Gradient for High Grades */}
+            {course.averageGrade !== null && course.averageGrade >= 90 && (
+              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/20 blur-[60px] rounded-full pointer-events-none -mr-10 -mt-10" />
+            )}
+
+            <div className="flex justify-between items-start gap-4 relative">
               <div className="min-w-0">
-                <div className="flex items-center gap-2 mb-1.5">
-                  <GraduationCap size={14} className="text-muted-foreground shrink-0" />
-                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Course</span>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="p-1.5 rounded-md bg-white/5 border border-white/5">
+                    <GraduationCap size={14} className="text-muted-foreground shrink-0" />
+                  </div>
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Course</span>
                 </div>
-                <h3 className="text-base font-semibold text-white truncate">{course.courseName}</h3>
+                <h3 className="text-lg font-semibold text-white truncate tracking-tight">{course.courseName}</h3>
               </div>
               <div className="text-right shrink-0">
-                <span className={clsx("text-3xl font-bold tabular-nums", getGradeColor(course.averageGrade))}>
-                  {course.averageGrade !== null ? Math.round(course.averageGrade) : "—"}
-                </span>
-                <span className="text-sm text-muted-foreground">%</span>
+                <div className={clsx("flex items-baseline justify-end", getGradeColor(course.averageGrade))}>
+                  <span className="text-4xl font-bold tabular-nums tracking-tighter">
+                    {course.averageGrade !== null ? Math.round(course.averageGrade) : "—"}
+                  </span>
+                  <span className="text-base text-muted-foreground font-medium ml-1">%</span>
+                </div>
               </div>
             </div>
 
             {/* Progress Bar */}
-            <div className="mt-4 h-1 w-full bg-white/[0.06] rounded-full overflow-hidden">
-              <div
-                className="h-full bg-white/20 rounded-full transition-all duration-500"
-                style={{ width: `${(course.completedCount / Math.max(course.totalCount, 1)) * 100}%` }}
-              />
-            </div>
-            <div className="mt-2 flex justify-between text-[10px] text-muted-foreground">
-              <span>Progress</span>
-              <span>{course.completedCount}/{course.totalCount}</span>
+            <div className="mt-6 relative">
+              <div className="flex justify-between text-[11px] font-medium text-muted-foreground mb-1.5">
+                <span>Completion Status</span>
+                <span className="text-white">{Math.round((course.completedCount / Math.max(course.totalCount, 1)) * 100)}%</span>
+              </div>
+              <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden border border-white/5">
+                <div
+                  className="h-full bg-primary rounded-full transition-all duration-1000 ease-out shadow-[0_0_10px_var(--primary)]"
+                  style={{ width: `${(course.completedCount / Math.max(course.totalCount, 1)) * 100}%` }}
+                />
+              </div>
             </div>
           </div>
 
           {/* List Area */}
-          <div className="flex-1 border-t border-white/[0.04] bg-[#09090b] p-2 space-y-0.5">
+          <div className="border-t border-white/[0.05] bg-black/20 p-2 space-y-1">
             {course.items.slice(0, 4).map((item) => (
-              <div key={item.id} className="group flex items-center justify-between px-3 py-2 rounded-lg hover:bg-white/[0.04] transition-colors">
-                <div className="flex items-center gap-2.5 min-w-0">
+              <div key={item.id} className="group/item flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-white/[0.05] transition-colors">
+                <div className="flex items-center gap-3 min-w-0">
                   {item.status === "completed" ? (
-                    <CheckCircle2 size={12} className="text-emerald-400 shrink-0" />
+                    <CheckCircle2 size={14} className="text-emerald-400 shrink-0" />
                   ) : (
-                    <Circle size={12} className="text-white/20 shrink-0" />
+                    <Circle size={14} className="text-white/10 group-hover/item:text-white/30 transition-colors shrink-0" />
                   )}
                   <span className={clsx(
-                    "text-sm truncate",
-                    item.status === "completed" ? "text-muted-foreground line-through" : "text-white/80"
+                    "text-sm truncate transition-colors",
+                    item.status === "completed" ? "text-muted-foreground line-through decoration-white/20" : "text-white/80 group-hover/item:text-white"
                   )}>
                     {item.title}
                   </span>
                 </div>
-                <span className={clsx("text-xs font-medium tabular-nums", getGradeColor(item.grade ?? null).split(' ')[0])}>
+                <span className={clsx("text-xs font-semibold tabular-nums px-2 py-0.5 rounded-md bg-white/5 min-w-[3rem] text-center", getGradeColor(item.grade ?? null).split(' ')[0])}>
                   {item.grade !== undefined ? `${item.grade}%` : "—"}
                 </span>
               </div>
             ))}
             {course.items.length > 4 && (
-              <div className="px-3 py-2 text-center">
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground hover:text-white cursor-pointer transition-colors">
-                  +{course.items.length - 4} more
-                </span>
+              <button className="w-full text-center py-2 text-[10px] uppercase tracking-wider font-medium text-muted-foreground hover:text-white/80 hover:bg-white/[0.02] transition-colors rounded-lg">
+                View {course.items.length - 4} more items
+              </button>
+            )}
+            {course.items.length === 0 && (
+              <div className="py-8 text-center text-xs text-muted-foreground/50 italic">
+                No items recorded
               </div>
             )}
           </div>

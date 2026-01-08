@@ -43,36 +43,36 @@ export function DuplicateWarnings() {
   }
 
   return (
-    <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 animate-in fade-in slide-in-from-top-2">
-      <div className="flex items-center gap-2 text-sm font-medium text-amber-400 mb-4">
-        <AlertCircle size={16} />
-        <span>Possible duplicates detected</span>
+    <div className="rounded-xl border border-amber-500/20 bg-amber-500/[0.02] backdrop-blur-sm p-4 animate-in fade-in slide-in-from-top-2 shadow-[0_0_20px_-10px_rgba(245,158,11,0.15)]">
+      <div className="flex items-center gap-2.5 text-sm font-medium text-amber-500 mb-4 px-1">
+        <AlertCircle size={16} className="text-amber-500" />
+        <span className="tracking-tight">Possible duplicates detected</span>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-2">
         {visible.slice(0, 3).map((group) => (
           <div
             key={group.groupKey}
-            className="flex items-start justify-between gap-3 rounded-lg border border-amber-500/10 bg-amber-500/5 p-3 text-sm relative group"
+            className="group relative flex items-start justify-between gap-3 rounded-lg border border-amber-500/10 bg-black/20 p-3 text-sm transition-all hover:bg-amber-500/[0.05] hover:border-amber-500/20"
           >
-            <div className="absolute left-0 top-0 bottom-0 w-1 bg-amber-500/20 rounded-l-lg" />
-            <div className="flex-1 min-w-0 pl-2">
-              <div className="text-[10px] uppercase tracking-wider text-amber-500/70 mb-1 flex items-center gap-1">
+            <div className="absolute left-0 top-3 bottom-3 w-0.5 bg-amber-500/40 rounded-r-full" />
+            <div className="flex-1 min-w-0 pl-3">
+              <div className="text-[10px] uppercase tracking-wider text-amber-500/60 mb-1.5 flex items-center gap-1.5 font-medium">
                 <Copy size={10} />
                 {group.reason}
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 {group.items.map((item) => (
-                  <div key={item.id} className="text-amber-100 truncate flex items-center gap-2">
-                    <span className="w-1 h-1 rounded-full bg-amber-500/50" />
-                    {item.title}
+                  <div key={item.id} className="text-stone-300 truncate flex items-center gap-2.5">
+                    <span className="w-1 h-1 rounded-full bg-amber-500/40" />
+                    <span className="opacity-80 group-hover:opacity-100 transition-opacity">{item.title}</span>
                   </div>
                 ))}
               </div>
             </div>
             <button
               onClick={() => dismiss(group.groupKey!)}
-              className="text-amber-500/50 hover:text-amber-400 transition-colors p-1"
+              className="text-white/20 hover:text-white hover:bg-white/10 p-1.5 rounded-md transition-all opacity-0 group-hover:opacity-100"
             >
               <X size={14} />
             </button>
@@ -81,8 +81,8 @@ export function DuplicateWarnings() {
       </div>
 
       {visible.length > 3 && (
-        <div className="mt-2 text-xs text-amber-500/50 text-center uppercase tracking-wider">
-          +{visible.length - 3} more duplicate groups
+        <div className="mt-3 text-[10px] text-amber-500/50 text-center uppercase tracking-widest font-medium">
+          +{visible.length - 3} more
         </div>
       )}
     </div>

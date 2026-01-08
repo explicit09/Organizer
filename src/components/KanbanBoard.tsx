@@ -125,8 +125,10 @@ export function KanbanBoard({ items }: KanbanBoardProps) {
             <div
               key={column.key}
               className={clsx(
-                "flex flex-col rounded-lg border bg-card transition-all duration-200",
-                dragOverColumn === column.key ? "border-primary/50 bg-primary/5" : "border-border"
+                "flex flex-col rounded-xl border transition-all duration-300 group/col",
+                dragOverColumn === column.key
+                  ? "border-primary/50 bg-primary/10 shadow-[0_0_30px_-5px_var(--primary)]"
+                  : "border-white/[0.05] glass-heavy shadow-lg"
               )}
               onDragOver={(e) => {
                 e.preventDefault();
@@ -141,19 +143,19 @@ export function KanbanBoard({ items }: KanbanBoardProps) {
               }}
             >
               {/* Column Header */}
-              <div className="flex items-center justify-between px-3 py-2.5 border-b border-border/60">
-                <div className="flex items-center gap-2">
-                  <div className={clsx("w-2 h-2 rounded-full", column.color)} />
-                  <span className="text-sm font-medium text-foreground">{column.label}</span>
-                  <span className="text-xs text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.05] bg-white/[0.02]">
+                <div className="flex items-center gap-2.5">
+                  <div className={clsx("w-2 h-2 rounded-full ring-2 ring-white/10", column.color)} />
+                  <span className="text-sm font-semibold tracking-tight text-foreground">{column.label}</span>
+                  <span className="text-[10px] font-medium text-muted-foreground bg-white/[0.05] px-2 py-0.5 rounded-full border border-white/[0.05]">
                     {columnItems.length}
                   </span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <button className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+                <div className="flex items-center gap-1 opacity-0 group-hover/col:opacity-100 transition-opacity">
+                  <button className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors">
                     <Plus size={14} />
                   </button>
-                  <button className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+                  <button className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors">
                     <MoreHorizontal size={14} />
                   </button>
                 </div>
@@ -180,10 +182,12 @@ export function KanbanBoard({ items }: KanbanBoardProps) {
                         }}
                         onDragEnd={() => setDraggedId(null)}
                         className={clsx(
-                          "group relative rounded-lg border border-border bg-background p-3 cursor-grab active:cursor-grabbing transition-all duration-200",
-                          "hover:border-border hover:shadow-sm",
-                          deletingId === item.id && "opacity-50 pointer-events-none",
-                          draggedId === item.id && "opacity-40 border-dashed scale-[0.98]"
+                          "group relative rounded-xl border p-3.5 cursor-grab active:cursor-grabbing transition-all duration-300",
+                          // Default state
+                          "bg-white/[0.03] border-white/[0.05] hover:bg-white/[0.06] hover:border-white/[0.1] hover:shadow-lg hover:-translate-y-0.5",
+                          // Conditional states
+                          deletingId === item.id && "opacity-50 pointer-events-none scale-95",
+                          draggedId === item.id && "opacity-20 border-dashed border-primary/50 scale-95 rotate-3"
                         )}
                       >
                         {/* Drag handle */}
