@@ -31,6 +31,21 @@ import {
 } from "lucide-react";
 import { clsx } from "clsx";
 
+// Normalize markdown content to ensure proper rendering
+function normalizeMarkdown(content: string): string {
+  return content
+    // Normalize various asterisk characters to standard ASCII asterisk
+    .replace(/[\u2217\uFE61\uFF0A]/g, '*')
+    // Normalize various dash/hyphen characters
+    .replace(/[\u2010\u2011\u2012\u2013\u2014\u2015]/g, '-')
+    // Normalize backtick characters
+    .replace(/[\u2018\u2019\u201C\u201D]/g, (match) => {
+      return match === '\u2018' || match === '\u2019' ? "'" : '"';
+    })
+    // Ensure proper line breaks
+    .replace(/\r\n/g, '\n');
+}
+
 type Message = {
   id: string;
   role: "user" | "assistant";
@@ -281,12 +296,9 @@ export function AIAgent() {
                       : "bg-white/[0.04] border border-white/[0.06] rounded-bl-md"
                   )}
                 >
-                  <div className="text-sm leading-relaxed prose prose-sm prose-invert max-w-none">
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm, remarkMath]}
-                      rehypePlugins={[rehypeKatex]}
-                    >
-                      {message.content}
+                  <div className="text-sm leading-relaxed prose prose-sm prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                      {normalizeMarkdown(message.content)}
                     </ReactMarkdown>
                   </div>
 
