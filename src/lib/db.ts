@@ -138,11 +138,125 @@ db.exec(`
     updated_at TEXT NOT NULL
   );
 
+  CREATE TABLE IF NOT EXISTS comments (
+    id TEXT PRIMARY KEY,
+    user_id TEXT,
+    item_id TEXT NOT NULL,
+    content TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS labels (
+    id TEXT PRIMARY KEY,
+    user_id TEXT,
+    name TEXT NOT NULL,
+    color TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS item_labels (
+    item_id TEXT NOT NULL,
+    label_id TEXT NOT NULL,
+    PRIMARY KEY (item_id, label_id),
+    FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE,
+    FOREIGN KEY (label_id) REFERENCES labels(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS saved_views (
+    id TEXT PRIMARY KEY,
+    user_id TEXT,
+    name TEXT NOT NULL,
+    filters_json TEXT,
+    sort_by TEXT,
+    group_by TEXT,
+    view_type TEXT DEFAULT 'list',
+    is_default INTEGER DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS dependencies (
+    id TEXT PRIMARY KEY,
+    user_id TEXT,
+    blocker_id TEXT NOT NULL,
+    blocked_id TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (blocker_id) REFERENCES items(id) ON DELETE CASCADE,
+    FOREIGN KEY (blocked_id) REFERENCES items(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS cycles (
+    id TEXT PRIMARY KEY,
+    user_id TEXT,
+    name TEXT NOT NULL,
+    description TEXT,
+    start_date TEXT NOT NULL,
+    end_date TEXT NOT NULL,
+    status TEXT DEFAULT 'planned',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS templates (
+    id TEXT PRIMARY KEY,
+    user_id TEXT,
+    name TEXT NOT NULL,
+    type TEXT NOT NULL,
+    data_json TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS favorites (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    item_type TEXT NOT NULL,
+    item_id TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    UNIQUE(user_id, item_type, item_id)
+  );
+
+  CREATE TABLE IF NOT EXISTS modules (
+    id TEXT PRIMARY KEY,
+    user_id TEXT,
+    project_id TEXT,
+    name TEXT NOT NULL,
+    description TEXT,
+    status TEXT DEFAULT 'active',
+    lead_id TEXT,
+    start_date TEXT,
+    target_date TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS notification_preferences (
+    user_id TEXT PRIMARY KEY,
+    email_enabled INTEGER DEFAULT 0,
+    browser_enabled INTEGER DEFAULT 1,
+    push_enabled INTEGER DEFAULT 0,
+    email_address TEXT,
+    reminder_minutes_json TEXT DEFAULT '[15, 60]',
+    quiet_hours_start INTEGER,
+    quiet_hours_end INTEGER,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
   CREATE INDEX IF NOT EXISTS idx_items_type_status ON items(type, status);
   CREATE INDEX IF NOT EXISTS idx_items_due_at ON items(due_at);
   CREATE INDEX IF NOT EXISTS idx_items_user_type ON items(user_id, type);
   CREATE INDEX IF NOT EXISTS idx_activity_user ON activity_log(user_id);
   CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
+  CREATE INDEX IF NOT EXISTS idx_comments_item ON comments(item_id);
+  CREATE INDEX IF NOT EXISTS idx_dependencies_blocker ON dependencies(blocker_id);
+  CREATE INDEX IF NOT EXISTS idx_dependencies_blocked ON dependencies(blocked_id);
+  CREATE INDEX IF NOT EXISTS idx_cycles_user ON cycles(user_id);
+  CREATE INDEX IF NOT EXISTS idx_favorites_user ON favorites(user_id);
+  CREATE INDEX IF NOT EXISTS idx_modules_project ON modules(project_id);
 `);
 
 function columnExists(table: string, column: string) {
@@ -171,6 +285,9 @@ ensureColumn("courses", "user_id", "TEXT");
 ensureColumn("projects", "user_id", "TEXT");
 ensureColumn("activity_log", "user_id", "TEXT");
 ensureColumn("integrations", "user_id", "TEXT");
+ensureColumn("items", "cycle_id", "TEXT"); // Link to cycle/sprint
+ensureColumn("items", "assignee_id", "TEXT"); // Assigned user
+ensureColumn("items", "module_id", "TEXT"); // Link to module
 
 export function getDb() {
   return db;

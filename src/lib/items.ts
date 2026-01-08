@@ -48,6 +48,10 @@ export type Item = {
   // School fields
   grade?: number;
   gradeWeight?: number;
+  // Assignment fields
+  assigneeId?: string;
+  moduleId?: string;
+  cycleId?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -77,6 +81,10 @@ const itemCreateSchema = z.object({
   // School fields
   grade: z.number().min(0).max(100).optional(),
   gradeWeight: z.number().min(0).max(100).optional(),
+  // Assignment fields
+  assigneeId: z.string().optional(),
+  moduleId: z.string().optional(),
+  cycleId: z.string().optional(),
 });
 
 const itemPatchSchema = itemCreateSchema.partial();
@@ -105,6 +113,9 @@ type ItemRow = {
   buffer_after: number | null;
   grade: number | null;
   grade_weight: number | null;
+  assignee_id: string | null;
+  module_id: string | null;
+  cycle_id: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -134,6 +145,9 @@ function mapRow(row: ItemRow): Item {
     bufferAfter: row.buffer_after ?? undefined,
     grade: row.grade ?? undefined,
     gradeWeight: row.grade_weight ?? undefined,
+    assigneeId: row.assignee_id ?? undefined,
+    moduleId: row.module_id ?? undefined,
+    cycleId: row.cycle_id ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -156,6 +170,7 @@ export function createItem(
         estimated_minutes, parent_id, course_id, project_id,
         recurrence_rule, recurrence_end, original_item_id,
         agenda, buffer_before, buffer_after, grade, grade_weight,
+        assignee_id, module_id, cycle_id,
         created_at, updated_at
       )
       VALUES (
@@ -163,6 +178,7 @@ export function createItem(
         @estimated_minutes, @parent_id, @course_id, @project_id,
         @recurrence_rule, @recurrence_end, @original_item_id,
         @agenda, @buffer_before, @buffer_after, @grade, @grade_weight,
+        @assignee_id, @module_id, @cycle_id,
         @created_at, @updated_at
       )
     `
@@ -190,6 +206,9 @@ export function createItem(
     buffer_after: data.bufferAfter ?? null,
     grade: data.grade ?? null,
     grade_weight: data.gradeWeight ?? null,
+    assignee_id: data.assigneeId ?? null,
+    module_id: data.moduleId ?? null,
+    cycle_id: data.cycleId ?? null,
     created_at: now,
     updated_at: now,
   });
@@ -217,6 +236,7 @@ export function getItem(id: string, options?: { userId?: string }): Item {
           due_at, start_at, end_at, estimated_minutes, parent_id,
           course_id, project_id, recurrence_rule, recurrence_end, original_item_id,
           agenda, buffer_before, buffer_after, grade, grade_weight,
+          assignee_id, module_id, cycle_id,
           created_at, updated_at
         FROM items
         WHERE id = ? AND user_id = ?

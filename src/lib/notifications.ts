@@ -113,18 +113,64 @@ export function listDueNotifications(
   return rows.map(mapRow);
 }
 
-export function markNotificationDelivered(id: string) {
+export function markNotificationDelivered(id: string, options?: { userId?: string }) {
   const db = getDb();
+  const userId = options?.userId ?? getDefaultUserId();
   db.prepare(
     `
       UPDATE notifications
       SET delivered_at = @delivered_at
-      WHERE id = @id
+      WHERE id = @id AND user_id = @user_id
     `
   ).run({
     id,
+    user_id: userId,
     delivered_at: new Date().toISOString(),
   });
+}
+
+export function markAllNotificationsDelivered(options?: { userId?: string }) {
+  const db = getDb();
+  const userId = options?.userId ?? getDefaultUserId();
+  db.prepare(
+    `
+      UPDATE notifications
+      SET delivered_at = @delivered_at
+      WHERE user_id = @user_id AND delivered_at IS NULL
+    `
+  ).run({
+    user_id: userId,
+    delivered_at: new Date().toISOString(),
+  });
+}
+
+export function deleteNotification(id: string, options?: { userId?: string }): boolean {
+  const db = getDb();
+  const userId = options?.userId ?? getDefaultUserId();
+  const result = db
+    .prepare("DELETE FROM notifications WHERE id = ? AND user_id = ?")
+    .run(id, userId);
+  return result.changes > 0;
+}
+
+export function listAllNotifications(options?: { userId?: string; limit?: number }) {
+  const db = getDb();
+  const userId = options?.userId ?? getDefaultUserId();
+  const limit = options?.limit ?? 50;
+
+  const rows = db
+    .prepare(
+      `
+        SELECT id, user_id, item_id, title, due_at, delivered_at
+        FROM notifications
+        WHERE user_id = @user_id
+        ORDER BY due_at DESC
+        LIMIT @limit
+      `
+    )
+    .all({ user_id: userId, limit }) as NotificationRow[];
+
+  return rows.map(mapRow);
 }
 
 // ========== Notification Delivery ==========
@@ -269,20 +315,98 @@ const defaultPreferences: Omit<NotificationPreferences, "userId"> = {
   reminderMinutesBefore: [15, 60], // 15 min and 1 hour before
 };
 
-// In-memory store for demo - in production, store in DB
-const preferencesStore = new Map<string, NotificationPreferences>();
+type PreferencesRow = {
+  user_id: string;
+  email_enabled: number;
+  browser_enabled: number;
+  push_enabled: number;
+  email_address: string | null;
+  reminder_minutes_json: string;
+  quiet_hours_start: number | null;
+  quiet_hours_end: number | null;
+};
+
+function mapPreferencesRow(row: PreferencesRow): NotificationPreferences {
+  return {
+    userId: row.user_id,
+    emailEnabled: row.email_enabled === 1,
+    browserEnabled: row.browser_enabled === 1,
+    pushEnabled: row.push_enabled === 1,
+    emailAddress: row.email_address ?? undefined,
+    reminderMinutesBefore: JSON.parse(row.reminder_minutes_json || "[15, 60]"),
+    quietHoursStart: row.quiet_hours_start ?? undefined,
+    quietHoursEnd: row.quiet_hours_end ?? undefined,
+  };
+}
 
 export function getNotificationPreferences(userId: string): NotificationPreferences {
-  return preferencesStore.get(userId) ?? { userId, ...defaultPreferences };
+  const db = getDb();
+  const row = db
+    .prepare("SELECT * FROM notification_preferences WHERE user_id = ?")
+    .get(userId) as PreferencesRow | undefined;
+
+  if (row) {
+    return mapPreferencesRow(row);
+  }
+
+  return { userId, ...defaultPreferences };
 }
 
 export function updateNotificationPreferences(
   userId: string,
   updates: Partial<NotificationPreferences>
 ): NotificationPreferences {
+  const db = getDb();
+  const now = new Date().toISOString();
   const current = getNotificationPreferences(userId);
   const updated = { ...current, ...updates, userId };
-  preferencesStore.set(userId, updated);
+
+  const existing = db
+    .prepare("SELECT user_id FROM notification_preferences WHERE user_id = ?")
+    .get(userId);
+
+  if (existing) {
+    db.prepare(
+      `UPDATE notification_preferences SET
+        email_enabled = ?,
+        browser_enabled = ?,
+        push_enabled = ?,
+        email_address = ?,
+        reminder_minutes_json = ?,
+        quiet_hours_start = ?,
+        quiet_hours_end = ?,
+        updated_at = ?
+      WHERE user_id = ?`
+    ).run(
+      updated.emailEnabled ? 1 : 0,
+      updated.browserEnabled ? 1 : 0,
+      updated.pushEnabled ? 1 : 0,
+      updated.emailAddress ?? null,
+      JSON.stringify(updated.reminderMinutesBefore),
+      updated.quietHoursStart ?? null,
+      updated.quietHoursEnd ?? null,
+      now,
+      userId
+    );
+  } else {
+    db.prepare(
+      `INSERT INTO notification_preferences
+        (user_id, email_enabled, browser_enabled, push_enabled, email_address, reminder_minutes_json, quiet_hours_start, quiet_hours_end, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(
+      userId,
+      updated.emailEnabled ? 1 : 0,
+      updated.browserEnabled ? 1 : 0,
+      updated.pushEnabled ? 1 : 0,
+      updated.emailAddress ?? null,
+      JSON.stringify(updated.reminderMinutesBefore),
+      updated.quietHoursStart ?? null,
+      updated.quietHoursEnd ?? null,
+      now,
+      now
+    );
+  }
+
   return updated;
 }
 
