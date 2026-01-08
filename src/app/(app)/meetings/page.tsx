@@ -28,17 +28,17 @@ export default async function MeetingsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <section className="rounded-3xl border border-stone-200/70 bg-white/80 p-6 shadow-[0_16px_40px_-30px_rgba(20,20,20,0.5)] backdrop-blur">
+      <section className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5">
         <div className="flex items-start justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-stone-900">Meeting Studio</h2>
-            <p className="mt-2 text-sm text-stone-500">
+            <h2 className="text-sm font-semibold text-white">Meeting Studio</h2>
+            <p className="mt-1.5 text-xs text-muted-foreground">
               Craft agendas, prep notes, and keep your calendar clean.
             </p>
           </div>
           <div className="text-right">
-            <div className="text-3xl font-semibold text-stone-900">{upcoming.length}</div>
-            <div className="text-xs uppercase tracking-wider text-stone-400">upcoming</div>
+            <div className="text-2xl font-bold text-white">{upcoming.length}</div>
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">upcoming</div>
           </div>
         </div>
       </section>
@@ -51,13 +51,13 @@ export default async function MeetingsPage() {
 
           {/* Conflicts */}
           {conflicts.length > 0 && (
-            <div className="rounded-3xl border border-amber-200/70 bg-amber-50 p-6 text-sm text-amber-900 shadow-[0_16px_40px_-30px_rgba(20,20,20,0.4)]">
-              <h3 className="text-base font-semibold">⚠️ Conflicts detected</h3>
-              <div className="mt-3 grid gap-2">
+            <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-5">
+              <h3 className="text-sm font-semibold text-amber-200">⚠️ Conflicts detected</h3>
+              <div className="mt-3 grid gap-1.5">
                 {conflicts.map((conflict, index) => (
                   <div
                     key={`${conflict.itemA.id}-${conflict.itemB.id}-${index}`}
-                    className="rounded-2xl border border-amber-200/70 bg-white px-4 py-3 text-xs"
+                    className="rounded-lg border border-amber-500/20 bg-[#09090b] px-3 py-2.5 text-xs text-amber-200"
                   >
                     {conflict.itemA.title} overlaps with {conflict.itemB.title}
                   </div>
@@ -75,13 +75,11 @@ export default async function MeetingsPage() {
 
         <div className="space-y-6">
           {/* Available Slots */}
-          <div className="rounded-3xl border border-stone-200/70 bg-white/80 p-6 shadow-[0_16px_40px_-30px_rgba(20,20,20,0.5)] backdrop-blur">
-            <AvailableSlotsView />
-          </div>
+          <AvailableSlotsView />
 
           {/* Recurring Meetings */}
-          <div className="rounded-3xl border border-stone-200/70 bg-white/80 p-6 shadow-[0_16px_40px_-30px_rgba(20,20,20,0.5)] backdrop-blur">
-            <h3 className="font-medium text-stone-900 mb-4">Recurring Meetings</h3>
+          <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5">
+            <h3 className="text-sm font-semibold text-white mb-4">Recurring Meetings</h3>
             <RecurringItemsManager />
           </div>
         </div>

@@ -36,9 +36,9 @@ export default async function ProgressPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <section className="rounded-3xl border border-stone-200/70 bg-white/80 p-6 shadow-[0_16px_40px_-30px_rgba(20,20,20,0.5)] backdrop-blur">
-        <h2 className="text-lg font-semibold text-stone-900">Progress Pulse</h2>
-        <p className="mt-2 text-sm text-stone-500">
+      <section className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5">
+        <h2 className="text-sm font-semibold text-white">Progress Pulse</h2>
+        <p className="mt-1.5 text-xs text-muted-foreground">
           Track how much you are finishing and where you are stuck.
         </p>
       </section>
@@ -52,26 +52,26 @@ export default async function ProgressPage() {
 
       <section className="grid gap-6 lg:grid-cols-2">
         <CheckinForm />
-        <div className="rounded-3xl border border-stone-200/70 bg-white/80 p-6 shadow-[0_16px_40px_-30px_rgba(20,20,20,0.5)] backdrop-blur">
-          <h3 className="text-base font-semibold text-stone-900">
+        <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5">
+          <h3 className="text-sm font-semibold text-white">
             Streak & recent check-ins
           </h3>
-          <p className="mt-2 text-sm text-stone-500">
+          <p className="mt-1.5 text-xs text-muted-foreground">
             Current streak: {streak} day{streak === 1 ? "" : "s"}
           </p>
-          <div className="mt-4 grid gap-3">
+          <div className="mt-4 grid gap-2">
             {checkins.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-stone-200 bg-stone-50 px-4 py-4 text-xs text-stone-500">
+              <div className="rounded-lg border border-dashed border-white/[0.08] bg-white/[0.02] px-3 py-3 text-xs text-muted-foreground">
                 No check-ins yet.
               </div>
             ) : (
               checkins.map((checkin) => (
                 <div
                   key={checkin.id}
-                  className="flex items-center justify-between rounded-2xl border border-stone-200/70 bg-white px-4 py-3 text-xs text-stone-600"
+                  className="flex items-center justify-between rounded-lg border border-white/[0.04] bg-[#09090b] px-3 py-2.5 text-xs"
                 >
-                  <span>{checkin.date}</span>
-                  <span>
+                  <span className="text-white">{checkin.date}</span>
+                  <span className="text-muted-foreground">
                     Mood {checkin.mood ?? "-"} · Focus {checkin.focus ?? "-"}
                   </span>
                 </div>
@@ -83,23 +83,23 @@ export default async function ProgressPage() {
 
       <section className="grid gap-6 lg:grid-cols-2">
         <GoalForm />
-        <div className="rounded-3xl border border-stone-200/70 bg-white/80 p-6 shadow-[0_16px_40px_-30px_rgba(20,20,20,0.5)] backdrop-blur">
-          <h3 className="text-base font-semibold text-stone-900">Goals</h3>
-          <div className="mt-4 grid gap-3">
+        <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5">
+          <h3 className="text-sm font-semibold text-white">Goals</h3>
+          <div className="mt-4 grid gap-2">
             {goals.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-stone-200 bg-stone-50 px-4 py-4 text-xs text-stone-500">
+              <div className="rounded-lg border border-dashed border-white/[0.08] bg-white/[0.02] px-3 py-3 text-xs text-muted-foreground">
                 No goals yet.
               </div>
             ) : (
               goals.map((goal) => (
                 <div
                   key={goal.id}
-                  className="rounded-2xl border border-stone-200/70 bg-white px-4 py-3"
+                  className="rounded-lg border border-white/[0.04] bg-[#09090b] px-3 py-2.5"
                 >
-                  <div className="text-sm font-semibold text-stone-800">
+                  <div className="text-sm font-medium text-white">
                     {goal.title}
                   </div>
-                  <div className="mt-2 text-xs text-stone-500">
+                  <div className="mt-1 text-xs text-muted-foreground">
                     {goal.current}
                     {goal.unit ? ` ${goal.unit}` : ""} /{" "}
                     {goal.target ?? "?"} {goal.unit ?? ""}
@@ -111,37 +111,35 @@ export default async function ProgressPage() {
         </div>
       </section>
 
-      <section className="rounded-3xl border border-stone-200/70 bg-white/80 p-6 shadow-[0_16px_40px_-30px_rgba(20,20,20,0.5)] backdrop-blur">
-        <h3 className="text-base font-semibold text-stone-900">
-          Weekly Summary
-        </h3>
-        <p className="mt-2 text-sm text-stone-500">
+      <section className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5">
+        <h3 className="text-sm font-semibold text-white">Weekly Summary</h3>
+        <p className="mt-1.5 text-xs text-muted-foreground">
           Completions logged over the last 7 days.
         </p>
-        <div className="mt-4 grid gap-3 text-xs text-stone-600 sm:grid-cols-3">
-          <div className="rounded-2xl border border-stone-200/70 bg-white px-4 py-3">
-            Created: {report.createdCount}
+        <div className="mt-4 grid gap-2 text-xs sm:grid-cols-3">
+          <div className="rounded-lg border border-white/[0.04] bg-[#09090b] px-3 py-2.5 text-muted-foreground">
+            Created: <span className="text-white font-medium">{report.createdCount}</span>
           </div>
-          <div className="rounded-2xl border border-stone-200/70 bg-white px-4 py-3">
-            Updated: {report.updatedCount}
+          <div className="rounded-lg border border-white/[0.04] bg-[#09090b] px-3 py-2.5 text-muted-foreground">
+            Updated: <span className="text-white font-medium">{report.updatedCount}</span>
           </div>
-          <div className="rounded-2xl border border-stone-200/70 bg-white px-4 py-3">
-            Completed: {report.completedCount}
+          <div className="rounded-lg border border-white/[0.04] bg-[#09090b] px-3 py-2.5 text-muted-foreground">
+            Completed: <span className="text-white font-medium">{report.completedCount}</span>
           </div>
         </div>
         <div className="mt-6 grid grid-cols-7 items-end gap-3">
           {series.map((point) => (
             <div key={point.date} className="flex flex-col items-center gap-2">
-              <div className="flex h-24 w-full items-end rounded-full bg-stone-100">
+              <div className="flex h-24 w-full items-end rounded-full bg-white/[0.06]">
                 <div
-                  className="w-full rounded-full bg-stone-900"
+                  className="w-full rounded-full bg-primary"
                   style={{ height: `${(point.count / maxCount) * 100}%` }}
                 />
               </div>
-              <div className="text-[10px] uppercase tracking-[0.3em] text-stone-400">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
                 {point.date.slice(5)}
               </div>
-              <div className="text-xs text-stone-500">{point.count}</div>
+              <div className="text-xs text-white">{point.count}</div>
             </div>
           ))}
         </div>

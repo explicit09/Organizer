@@ -3,6 +3,9 @@ import { redirect } from "next/navigation";
 import { MobileNav } from "../../components/MobileNav";
 import { Sidebar } from "../../components/Sidebar";
 import { Topbar } from "../../components/Topbar";
+import { CommandPalette } from "../../components/CommandPalette";
+import { AIAgent } from "../../components/AIAgent";
+import { Toaster } from "../../components/ui/Toaster";
 import { getSessionUserId } from "../../lib/auth";
 
 export default async function AppLayout({
@@ -19,15 +22,22 @@ export default async function AppLayout({
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-background">
       <Sidebar />
-      <main className="flex-1 px-4 py-6 md:px-8 md:py-10">
-        <div className="mx-auto flex max-w-6xl flex-col gap-6 md:gap-8">
-          <MobileNav />
+      <div className="flex flex-1 flex-col m-2 ml-0 md:ml-2">
+        <main className="flex flex-1 flex-col bg-card border border-border rounded-lg min-w-0 overflow-hidden">
           <Topbar />
-          {children}
-        </div>
-      </main>
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="mx-auto max-w-6xl">
+              <MobileNav />
+              {children}
+            </div>
+          </div>
+        </main>
+      </div>
+      <CommandPalette />
+      <AIAgent />
+      <Toaster />
     </div>
   );
 }

@@ -30,17 +30,17 @@ export default async function SchoolPage() {
   return (
     <div className="flex flex-col gap-6">
       {/* Header with Stats */}
-      <section className="rounded-3xl border border-stone-200/70 bg-white/80 p-6 shadow-[0_16px_40px_-30px_rgba(20,20,20,0.5)] backdrop-blur">
+      <section className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5">
         <div className="flex items-start justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-stone-900">School Command</h2>
-            <p className="mt-2 text-sm text-stone-500">
+            <h2 className="text-sm font-semibold text-white">School Command</h2>
+            <p className="mt-1.5 text-xs text-muted-foreground">
               Track assignments, exams, and study sessions by course.
             </p>
           </div>
           <div className="text-right">
-            <div className="text-3xl font-semibold text-stone-900">{completionRate}%</div>
-            <div className="text-xs uppercase tracking-wider text-stone-400">
+            <div className="text-2xl font-bold text-white">{completionRate}%</div>
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
               {completed}/{total} completed
             </div>
           </div>
@@ -63,15 +63,13 @@ export default async function SchoolPage() {
 
         <div className="space-y-6">
           {/* Grades by Course */}
-          <div className="rounded-3xl border border-stone-200/70 bg-white/80 p-6 shadow-[0_16px_40px_-30px_rgba(20,20,20,0.5)] backdrop-blur">
-            <h3 className="text-lg font-semibold text-stone-900 mb-4">Grades by Course</h3>
+          <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5">
+            <h3 className="text-sm font-semibold text-white mb-4">Grades by Course</h3>
             <GradesTable />
           </div>
 
           {/* Study Plan */}
-          <div className="rounded-3xl border border-stone-200/70 bg-white/80 p-6 shadow-[0_16px_40px_-30px_rgba(20,20,20,0.5)] backdrop-blur">
-            <StudyPlanView />
-          </div>
+          <StudyPlanView />
         </div>
       </section>
     </div>

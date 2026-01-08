@@ -40,47 +40,47 @@ export default function RegisterPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <div className="text-xs uppercase tracking-[0.3em] text-stone-400">
+        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
           Organizer
         </div>
-        <h1 className="mt-2 text-2xl font-semibold text-stone-900">
+        <h1 className="mt-2 text-xl font-semibold text-white">
           Create account
         </h1>
-        <p className="mt-2 text-sm text-stone-500">
+        <p className="mt-1.5 text-xs text-muted-foreground">
           Start organizing with clarity.
         </p>
       </div>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div>
-          <label className="text-xs uppercase tracking-[0.3em] text-stone-500">
+          <label className="text-[10px] uppercase tracking-wider text-muted-foreground">
             Name
           </label>
           <input
-            className="mt-2 w-full rounded-2xl border border-stone-200/70 bg-white px-4 py-3 text-sm text-stone-700 outline-none"
+            className="mt-2 w-full rounded-lg border border-white/[0.08] bg-[#09090b] px-3 py-2.5 text-sm text-white outline-none focus:border-primary/40 placeholder:text-muted-foreground"
             value={name}
             onChange={(event) => setName(event.target.value)}
           />
         </div>
         <div>
-          <label className="text-xs uppercase tracking-[0.3em] text-stone-500">
+          <label className="text-[10px] uppercase tracking-wider text-muted-foreground">
             Email
           </label>
           <input
             type="email"
             required
-            className="mt-2 w-full rounded-2xl border border-stone-200/70 bg-white px-4 py-3 text-sm text-stone-700 outline-none"
+            className="mt-2 w-full rounded-lg border border-white/[0.08] bg-[#09090b] px-3 py-2.5 text-sm text-white outline-none focus:border-primary/40 placeholder:text-muted-foreground"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
           />
         </div>
         <div>
-          <label className="text-xs uppercase tracking-[0.3em] text-stone-500">
+          <label className="text-[10px] uppercase tracking-wider text-muted-foreground">
             Password
           </label>
           <input
             type="password"
             required
-            className="mt-2 w-full rounded-2xl border border-stone-200/70 bg-white px-4 py-3 text-sm text-stone-700 outline-none"
+            className="mt-2 w-full rounded-lg border border-white/[0.08] bg-[#09090b] px-3 py-2.5 text-sm text-white outline-none focus:border-primary/40 placeholder:text-muted-foreground"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
           />
@@ -88,19 +88,19 @@ export default function RegisterPage() {
         <button
           type="submit"
           disabled={!email || !password || isSubmitting}
-          className="rounded-2xl bg-stone-900 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isSubmitting ? "Creating..." : "Create account"}
         </button>
         {error ? (
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">
+          <div className="rounded-lg border border-rose-500/20 bg-rose-500/10 px-3 py-2.5 text-xs text-rose-400">
             {error}
           </div>
         ) : null}
       </form>
-      <div className="text-xs text-stone-500">
+      <div className="text-xs text-muted-foreground">
         Already have an account?{" "}
-        <a className="font-semibold text-stone-800" href="/login">
+        <a className="font-medium text-primary hover:text-primary/80 transition-colors" href="/login">
           Sign in
         </a>
         .

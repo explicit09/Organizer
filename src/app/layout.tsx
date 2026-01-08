@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
-import { Newsreader, Space_Grotesk } from "next/font/google";
+import { Plus_Jakarta_Sans, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space",
+const jakarta = Plus_Jakarta_Sans({
+  variable: "--font-sans",
   subsets: ["latin"],
   display: "swap",
 });
 
-const newsreader = Newsreader({
-  variable: "--font-news",
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-display",
   subsets: ["latin"],
   display: "swap",
 });
@@ -27,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${spaceGrotesk.variable} ${newsreader.variable} antialiased`}
+        className={`${jakarta.variable} ${spaceGrotesk.variable} antialiased bg-background text-foreground`}
       >
         {children}
       </body>

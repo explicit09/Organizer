@@ -19,9 +19,9 @@ export default async function InboxPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <section className="rounded-3xl border border-stone-200/70 bg-white/80 p-6 shadow-[0_16px_40px_-30px_rgba(20,20,20,0.5)] backdrop-blur">
-        <h2 className="text-lg font-semibold text-stone-900">Quick Capture</h2>
-        <p className="mt-2 text-sm text-stone-500">
+      <section className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5">
+        <h2 className="text-sm font-semibold text-white">Quick Capture</h2>
+        <p className="mt-1.5 text-xs text-muted-foreground">
           Drop a thought or task here and let the organizer route it.
         </p>
         <div className="mt-4">

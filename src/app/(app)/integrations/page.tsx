@@ -21,120 +21,120 @@ export default async function IntegrationsPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <section className="rounded-3xl border border-stone-200/70 bg-white/80 p-6 shadow-[0_16px_40px_-30px_rgba(20,20,20,0.5)] backdrop-blur">
-        <h2 className="text-lg font-semibold text-stone-900">Integrations</h2>
-        <p className="mt-2 text-sm text-stone-500">
+      <section className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5">
+        <h2 className="text-sm font-semibold text-white">Integrations</h2>
+        <p className="mt-1.5 text-xs text-muted-foreground">
           Connect calendars and tools to schedule meetings automatically.
         </p>
         {status ? (
-          <div className="mt-4 rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-xs text-stone-600">
+          <div className="mt-4 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2.5 text-xs text-muted-foreground">
             Status: {status}
             {reason ? ` (${reason})` : ""}
           </div>
         ) : null}
         {connected === "google" ? (
-          <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs text-emerald-700">
+          <div className="mt-4 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2.5 text-xs text-emerald-400">
             Successfully connected to Google Calendar!
           </div>
         ) : null}
         {error ? (
-          <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700">
+          <div className="mt-4 rounded-lg border border-rose-500/20 bg-rose-500/10 px-3 py-2.5 text-xs text-rose-400">
             Error: {error}
           </div>
         ) : null}
       </section>
 
       {/* Google Calendar */}
-      <section className="rounded-3xl border border-stone-200/70 bg-white/80 p-6 shadow-[0_16px_40px_-30px_rgba(20,20,20,0.5)] backdrop-blur">
+      <section className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-green-500 text-white text-lg">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-green-500 text-white text-sm font-semibold">
               G
             </div>
             <div>
-              <h3 className="text-base font-semibold text-stone-900">
+              <h3 className="text-sm font-semibold text-white">
                 Google Calendar
               </h3>
-              <p className="mt-1 text-sm text-stone-500">
+              <p className="mt-0.5 text-xs text-muted-foreground">
                 Sync events and find available slots.
               </p>
             </div>
           </div>
-          <div className={`text-xs uppercase tracking-[0.3em] ${googleTokens ? "text-emerald-600" : "text-stone-400"}`}>
+          <div className={`text-[10px] uppercase tracking-wider ${googleTokens ? "text-emerald-400" : "text-muted-foreground"}`}>
             {googleTokens ? "Connected" : "Not connected"}
           </div>
         </div>
 
-        <div className="mt-6 flex flex-wrap items-center gap-3">
+        <div className="mt-4 flex flex-wrap items-center gap-3">
           <a
             href="/api/google/connect"
-            className="rounded-2xl bg-stone-900 px-4 py-2 text-sm font-semibold text-white hover:bg-stone-800 transition-colors"
+            className="rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
           >
             {googleTokens ? "Reconnect Google" : "Connect Google Calendar"}
           </a>
-          <div className="text-xs text-stone-500">
+          <div className="text-xs text-muted-foreground">
             Requires Google Cloud OAuth setup.
           </div>
         </div>
       </section>
 
       {/* Outlook Calendar */}
-      <section className="rounded-3xl border border-stone-200/70 bg-white/80 p-6 shadow-[0_16px_40px_-30px_rgba(20,20,20,0.5)] backdrop-blur">
+      <section className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-blue-400 text-white text-lg">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-blue-400 text-white text-sm font-semibold">
               O
             </div>
             <div>
-              <h3 className="text-base font-semibold text-stone-900">
+              <h3 className="text-sm font-semibold text-white">
                 Outlook Calendar
               </h3>
-              <p className="mt-1 text-sm text-stone-500">
+              <p className="mt-0.5 text-xs text-muted-foreground">
                 Two-way sync for scheduling meetings and focus blocks.
               </p>
             </div>
           </div>
-          <div className={`text-xs uppercase tracking-[0.3em] ${outlookTokens ? "text-emerald-600" : "text-stone-400"}`}>
+          <div className={`text-[10px] uppercase tracking-wider ${outlookTokens ? "text-emerald-400" : "text-muted-foreground"}`}>
             {outlookTokens ? "Connected" : "Not connected"}
           </div>
         </div>
 
-        <div className="mt-6 flex flex-wrap items-center gap-3">
+        <div className="mt-4 flex flex-wrap items-center gap-3">
           <a
             href="/api/outlook/connect"
-            className="rounded-2xl bg-stone-900 px-4 py-2 text-sm font-semibold text-white hover:bg-stone-800 transition-colors"
+            className="rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
           >
             {outlookTokens ? "Reconnect Outlook" : "Connect Outlook"}
           </a>
-          <div className="text-xs text-stone-500">
+          <div className="text-xs text-muted-foreground">
             Needs Microsoft Graph API access.
           </div>
         </div>
       </section>
 
       {/* Email Notifications */}
-      <section className="rounded-3xl border border-stone-200/70 bg-white/80 p-6 shadow-[0_16px_40px_-30px_rgba(20,20,20,0.5)] backdrop-blur">
+      <section className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 text-white text-lg">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 text-white text-sm">
               ✉
             </div>
             <div>
-              <h3 className="text-base font-semibold text-stone-900">
+              <h3 className="text-sm font-semibold text-white">
                 Email Notifications
               </h3>
-              <p className="mt-1 text-sm text-stone-500">
+              <p className="mt-0.5 text-xs text-muted-foreground">
                 Get reminder emails for upcoming tasks and meetings.
               </p>
             </div>
           </div>
-          <div className="text-xs uppercase tracking-[0.3em] text-stone-400">
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
             {process.env.RESEND_API_KEY ? "Configured" : "Not configured"}
           </div>
         </div>
 
-        <div className="mt-6 text-xs text-stone-500">
-          Set <code className="rounded bg-stone-100 px-1 py-0.5">RESEND_API_KEY</code> environment variable to enable.
+        <div className="mt-4 text-xs text-muted-foreground">
+          Set <code className="rounded bg-white/[0.06] px-1.5 py-0.5 text-white/70">RESEND_API_KEY</code> environment variable to enable.
         </div>
       </section>
     </div>
