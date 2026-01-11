@@ -5,50 +5,46 @@ import { logActivity } from "./activity";
 
 // Helper to find item by ID or title
 function findItem(idOrTitle: string, userId: string): Item | null {
-  // First try by ID
-  const byId = getItem(idOrTitle, { userId });
-  if (byId) return byId;
+  try {
+    // First try by ID (only if it looks like a UUID)
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrTitle);
+    if (isUUID) {
+      try {
+        const byId = getItem(idOrTitle, { userId });
+        if (byId) return byId;
+      } catch {
+        // Not found by ID, continue to title search
+      }
+    }
 
-  // Then search by title (case-insensitive)
-  const allItems = listItems(undefined, { userId });
-  const searchLower = idOrTitle.toLowerCase().trim();
+    // Then search by title (case-insensitive)
+    const allItems = listItems(undefined, { userId });
+    const searchLower = idOrTitle.toLowerCase().trim();
 
-  console.log(`[findItem] Searching for "${idOrTitle}" among ${allItems.length} items for user ${userId}`);
+    // Exact match first
+    const exact = allItems.find((i) => i.title.toLowerCase() === searchLower);
+    if (exact) return exact;
 
-  // Exact match first
-  const exact = allItems.find((i) => i.title.toLowerCase() === searchLower);
-  if (exact) {
-    console.log(`[findItem] Found exact match: "${exact.title}"`);
-    return exact;
+    // Partial match - search term in title
+    const partial = allItems.find((i) => i.title.toLowerCase().includes(searchLower));
+    if (partial) return partial;
+
+    // Reverse partial - title in search term
+    const reversePartial = allItems.find((i) => searchLower.includes(i.title.toLowerCase()));
+    if (reversePartial) return reversePartial;
+
+    // Fuzzy match - any word matches
+    const searchWords = searchLower.split(/\s+/).filter(w => w.length > 2);
+    const fuzzy = allItems.find((i) => {
+      const titleLower = i.title.toLowerCase();
+      return searchWords.some(word => titleLower.includes(word));
+    });
+    if (fuzzy) return fuzzy;
+
+    return null;
+  } catch {
+    return null;
   }
-
-  // Partial match - search term in title
-  const partial = allItems.find((i) => i.title.toLowerCase().includes(searchLower));
-  if (partial) {
-    console.log(`[findItem] Found partial match: "${partial.title}"`);
-    return partial;
-  }
-
-  // Reverse partial - title in search term
-  const reversePartial = allItems.find((i) => searchLower.includes(i.title.toLowerCase()));
-  if (reversePartial) {
-    console.log(`[findItem] Found reverse partial match: "${reversePartial.title}"`);
-    return reversePartial;
-  }
-
-  // Fuzzy match - any word matches
-  const searchWords = searchLower.split(/\s+/).filter(w => w.length > 2);
-  const fuzzy = allItems.find((i) => {
-    const titleLower = i.title.toLowerCase();
-    return searchWords.some(word => titleLower.includes(word));
-  });
-  if (fuzzy) {
-    console.log(`[findItem] Found fuzzy match: "${fuzzy.title}"`);
-    return fuzzy;
-  }
-
-  console.log(`[findItem] No match found. Available titles: ${allItems.slice(0, 5).map(i => i.title).join(", ")}`);
-  return null;
 }
 
 // ========== Action Types ==========
@@ -68,7 +64,11 @@ export type AgentAction =
   | { type: "get_summary"; data: GetSummaryAction }
   | { type: "clear_notifications"; data: ClearNotificationsAction }
   | { type: "navigate"; data: NavigateAction }
-  | { type: "respond"; data: RespondAction };
+  | { type: "respond"; data: RespondAction }
+  | { type: "batch_update"; data: BatchUpdateAction }
+  | { type: "bulk_create"; data: BulkCreateAction }
+  | { type: "start_focus"; data: StartFocusAction }
+  | { type: "get_analytics"; data: GetAnalyticsAction };
 
 type CreateItemAction = {
   title: string;
@@ -155,6 +155,38 @@ type RespondAction = {
   message: string;
 };
 
+type BatchUpdateAction = {
+  filter: {
+    type?: string;
+    status?: string;
+    priority?: string;
+    overdue?: boolean;
+  };
+  updates: Partial<{
+    status: "not_started" | "in_progress" | "completed" | "blocked";
+    priority: "low" | "medium" | "high" | "urgent";
+    dueAt: string;
+  }>;
+};
+
+type BulkCreateAction = {
+  items: Array<{
+    title: string;
+    type?: "task" | "meeting" | "school";
+    priority?: "low" | "medium" | "high" | "urgent";
+    dueAt?: string;
+  }>;
+};
+
+type StartFocusAction = {
+  itemId?: string;
+  duration?: number; // in minutes
+};
+
+type GetAnalyticsAction = {
+  days?: number;
+};
+
 // ========== Action Execution ==========
 
 export type ActionResult = {
@@ -173,18 +205,30 @@ export async function executeAction(
   try {
     switch (action.type) {
       case "create_item": {
-        const item = createItem(
-          {
-            type: action.data.type || "task",
-            title: action.data.title,
-            priority: action.data.priority || "medium",
-            status: action.data.status || "not_started",
-            dueAt: action.data.dueAt,
-            details: action.data.details,
-            tags: action.data.tags || [],
-          },
-          { userId }
-        );
+        // Normalize date strings to ensure they're valid ISO format
+        let dueAt: string | undefined = undefined;
+        if (action.data.dueAt && action.data.dueAt !== "") {
+          try {
+            // Parse the date and convert to proper ISO format
+            const date = new Date(action.data.dueAt);
+            if (!isNaN(date.getTime())) {
+              dueAt = date.toISOString();
+            }
+          } catch {
+            console.warn("[AI Agent] Invalid date format:", action.data.dueAt);
+          }
+        }
+        
+        const itemInput = {
+          type: action.data.type || "task",
+          title: action.data.title,
+          priority: action.data.priority || "medium",
+          status: action.data.status || "not_started",
+          dueAt,
+          details: action.data.details && action.data.details !== "" ? action.data.details : undefined,
+          tags: action.data.tags || [],
+        };
+        const item = createItem(itemInput, { userId });
         logActivity({
           userId,
           action: "item_created",
@@ -365,9 +409,22 @@ export async function executeAction(
         if (!existing) {
           return { success: false, message: `Item not found: ${action.data.itemId}` };
         }
+        // Normalize the date format
+        let newDueAt: string | undefined = undefined;
+        try {
+          const date = new Date(action.data.newDueAt);
+          if (!isNaN(date.getTime())) {
+            newDueAt = date.toISOString();
+          }
+        } catch {
+          return { success: false, message: "Invalid date format" };
+        }
+        if (!newDueAt) {
+          return { success: false, message: "Invalid date format" };
+        }
         const item = updateItem(
           existing.id,
-          { dueAt: action.data.newDueAt },
+          { dueAt: newDueAt },
           { userId }
         );
         if (!item) {
@@ -477,6 +534,159 @@ export async function executeAction(
         return {
           success: true,
           message: action.data.message,
+        };
+      }
+
+      case "batch_update": {
+        const items = listItems(undefined, { userId });
+        const now = new Date();
+        
+        // Apply filters
+        let filtered = items;
+        const { filter, updates } = action.data;
+        
+        if (filter.type) {
+          filtered = filtered.filter((i) => i.type === filter.type);
+        }
+        if (filter.status) {
+          filtered = filtered.filter((i) => i.status === filter.status);
+        }
+        if (filter.priority) {
+          filtered = filtered.filter((i) => i.priority === filter.priority);
+        }
+        if (filter.overdue) {
+          filtered = filtered.filter((i) => {
+            if (!i.dueAt || i.status === "completed") return false;
+            return new Date(i.dueAt) < now;
+          });
+        }
+
+        // Apply updates to all matching items
+        const results: Item[] = [];
+        for (const item of filtered) {
+          const updated = updateItem(item.id, updates, { userId });
+          if (updated) {
+            results.push(updated);
+            logActivity({
+              userId,
+              action: "item_updated",
+              itemId: item.id,
+              data: updates,
+            });
+          }
+        }
+
+        return {
+          success: true,
+          message: `Updated ${results.length} item(s)`,
+          data: results,
+        };
+      }
+
+      case "bulk_create": {
+        const results: Item[] = [];
+        for (const itemData of action.data.items) {
+          const item = createItem(
+            {
+              type: itemData.type || "task",
+              title: itemData.title,
+              priority: itemData.priority || "medium",
+              status: "not_started",
+              dueAt: itemData.dueAt,
+              tags: [],
+            },
+            { userId }
+          );
+          results.push(item);
+          logActivity({
+            userId,
+            action: "item_created",
+            itemId: item.id,
+            data: { type: item.type, title: item.title },
+          });
+        }
+
+        return {
+          success: true,
+          message: `Created ${results.length} item(s)`,
+          data: results,
+        };
+      }
+
+      case "start_focus": {
+        // Find the item if itemId is provided
+        let focusItem: Item | null = null;
+        if (action.data.itemId) {
+          focusItem = findItem(action.data.itemId, userId);
+        }
+
+        const duration = action.data.duration || 25; // Default 25 minute Pomodoro
+        
+        return {
+          success: true,
+          message: focusItem 
+            ? `Starting ${duration} minute focus session on "${focusItem.title}"`
+            : `Starting ${duration} minute focus session`,
+          data: { 
+            duration,
+            itemId: focusItem?.id,
+            itemTitle: focusItem?.title,
+          },
+          navigate: "/today?focus=true",
+        };
+      }
+
+      case "get_analytics": {
+        const items = listItems(undefined, { userId });
+        const days = action.data.days || 7;
+        const now = new Date();
+        const startDate = new Date(now);
+        startDate.setDate(startDate.getDate() - days);
+
+        // Calculate analytics
+        const recentItems = items.filter((i) => {
+          const created = new Date(i.createdAt);
+          return created >= startDate && created <= now;
+        });
+
+        const completedItems = items.filter((i) => {
+          if (i.status !== "completed" || !i.updatedAt) return false;
+          const completed = new Date(i.updatedAt);
+          return completed >= startDate && completed <= now;
+        });
+
+        const overdue = items.filter((i) => {
+          if (!i.dueAt || i.status === "completed") return false;
+          return new Date(i.dueAt) < now;
+        });
+
+        const byType = {
+          tasks: recentItems.filter((i) => i.type === "task").length,
+          meetings: recentItems.filter((i) => i.type === "meeting").length,
+          school: recentItems.filter((i) => i.type === "school").length,
+        };
+
+        const byPriority = {
+          urgent: items.filter((i) => i.priority === "urgent" && i.status !== "completed").length,
+          high: items.filter((i) => i.priority === "high" && i.status !== "completed").length,
+          medium: items.filter((i) => i.priority === "medium" && i.status !== "completed").length,
+          low: items.filter((i) => i.priority === "low" && i.status !== "completed").length,
+        };
+
+        return {
+          success: true,
+          message: `Analytics for the last ${days} days`,
+          data: {
+            period: `${days} days`,
+            created: recentItems.length,
+            completed: completedItems.length,
+            overdue: overdue.length,
+            byType,
+            byPriority,
+            completionRate: recentItems.length > 0 
+              ? Math.round((completedItems.length / recentItems.length) * 100) 
+              : 0,
+          },
         };
       }
 
@@ -636,18 +846,32 @@ You can perform the following actions by responding with JSON:
 {"action": "get_summary", "data": {"period": "today|week|month"}}
 
 10. NAVIGATE:
-{"action": "navigate", "data": {"to": "/tasks|/meetings|/school|/dashboard|/inbox"}}
+{"action": "navigate", "data": {"to": "/tasks|/meetings|/school|/dashboard|/inbox|/today|/habits|/progress"}}
 
 11. RESPOND (for conversation):
 {"action": "respond", "data": {"message": "Your response to the user"}}
 
+12. BATCH UPDATE (update multiple items at once):
+{"action": "batch_update", "data": {"filter": {"type": "task", "status": "not_started", "priority": "low", "overdue": true}, "updates": {"priority": "high", "status": "in_progress"}}}
+
+13. BULK CREATE (create multiple items at once):
+{"action": "bulk_create", "data": {"items": [{"title": "...", "type": "task", "priority": "medium"}, {"title": "...", "type": "meeting"}]}}
+
+14. START FOCUS (start a focus session):
+{"action": "start_focus", "data": {"itemId": "...", "duration": 25}}
+
+15. GET ANALYTICS (get productivity analytics):
+{"action": "get_analytics", "data": {"days": 7}}
+
 RULES:
 - Always respond with valid JSON
-- You can include multiple actions in an array
+- You can include multiple actions in an array for complex operations
 - For dates, use ISO format (YYYY-MM-DDTHH:mm:ss)
 - When the user asks about their schedule/tasks, first get a summary or list items
 - Be proactive in suggesting organization improvements
 - When creating items, infer the type from context (study/homework = school, team meeting = meeting, etc.)
+- Use batch_update to efficiently handle requests like "mark all overdue tasks as high priority"
+- Use bulk_create when the user wants to create multiple items
 - Always be helpful and concise
 - If you don't understand, ask for clarification using the respond action`;
 }

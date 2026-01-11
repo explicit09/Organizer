@@ -185,13 +185,16 @@ export async function generateAiPlan(text: string): Promise<AiPlan> {
         {
           role: "system",
           content: `You are an intelligent task organizer. Analyze user input and create structured items.
+
+CURRENT DATE/TIME: ${new Date().toISOString()} (${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })})
+
 For each item, determine:
 - type: "task" | "meeting" | "school"
 - title: clear, actionable title
 - priority: "urgent" | "high" | "medium" | "low" based on deadline/importance cues
 - estimatedMinutes: realistic time estimate (15-480 minutes)
 - subtasks: break complex items into 2-5 subtasks
-- dueAt: ISO date string if mentioned (e.g., "2024-01-15T23:59:59.999Z")
+- dueAt: ISO date string if mentioned. Use CURRENT DATE above for relative dates like "tomorrow", "next week", etc.
 - recurrenceRule: "daily" | "weekly" | "biweekly" | "monthly" | "yearly" if recurring
 - agenda: for meetings, provide a structured agenda
 

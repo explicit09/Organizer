@@ -46,6 +46,43 @@ function normalizeMarkdown(content: string): string {
     .replace(/\r\n/g, '\n');
 }
 
+// Format tool names for display
+function formatToolName(name: string): string {
+  const toolLabels: Record<string, string> = {
+    create_item: "Creating item",
+    list_items: "Listing items",
+    update_item: "Updating item",
+    delete_item: "Deleting item",
+    mark_complete: "Marking complete",
+    batch_update: "Batch updating",
+    bulk_create: "Creating items",
+    search_items: "Searching",
+    search_web: "Searching web",
+    fetch_webpage: "Reading page",
+    research_topic: "Researching",
+    break_down_task: "Breaking down task",
+    create_plan: "Creating plan",
+    suggest_schedule: "Analyzing schedule",
+    get_analytics: "Getting analytics",
+    analyze_patterns: "Analyzing patterns",
+    get_dependency_graph: "Getting dependencies",
+    get_summary: "Getting summary",
+    remember_preference: "Remembering",
+    recall_context: "Recalling",
+    log_observation: "Logging observation",
+    start_focus_session: "Starting focus",
+    get_calendar_context: "Checking calendar",
+    navigate: "Navigating",
+  };
+  return toolLabels[name] || name.replace(/_/g, " ");
+}
+
+type ToolExecution = {
+  name: string;
+  status: "running" | "completed" | "error";
+  success?: boolean;
+};
+
 type Message = {
   id: string;
   role: "user" | "assistant";
@@ -55,6 +92,8 @@ type Message = {
     success: boolean;
     message: string;
   }>;
+  tools?: ToolExecution[];
+  isStreaming?: boolean;
   timestamp: Date;
 };
 
@@ -64,6 +103,8 @@ export function AIAgent() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [useNewAgent, setUseNewAgent] = useState(true); // Toggle for new vs old API
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -91,7 +132,173 @@ export function AIAgent() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const sendMessage = useCallback(async () => {
+  // New streaming send function
+  const sendMessageStreaming = useCallback(async () => {
+    if (!input.trim() || loading) return;
+
+    const userMessage: Message = {
+      id: crypto.randomUUID(),
+      role: "user",
+      content: input.trim(),
+      timestamp: new Date(),
+    };
+
+    const assistantMessageId = crypto.randomUUID();
+    const assistantMessage: Message = {
+      id: assistantMessageId,
+      role: "assistant",
+      content: "",
+      tools: [],
+      isStreaming: true,
+      timestamp: new Date(),
+    };
+
+    setMessages((prev) => [...prev, userMessage, assistantMessage]);
+    setInput("");
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/ai/chat/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: userMessage.content,
+          conversationId,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to get response");
+      }
+
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        throw new Error("No response body");
+      }
+
+      let currentContent = "";
+      let currentTools: ToolExecution[] = [];
+      let navigateTo: string | undefined;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n");
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+
+          try {
+            const data = JSON.parse(line.slice(6));
+
+            switch (data.type) {
+              case "start":
+                setConversationId(data.conversationId);
+                break;
+
+              case "text":
+                currentContent += data.content;
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantMessageId
+                      ? { ...m, content: currentContent }
+                      : m
+                  )
+                );
+                break;
+
+              case "tool_start":
+                currentTools = [
+                  ...currentTools,
+                  { name: data.toolName, status: "running" },
+                ];
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantMessageId
+                      ? { ...m, tools: currentTools }
+                      : m
+                  )
+                );
+                break;
+
+              case "tool_end":
+                currentTools = currentTools.map((t) =>
+                  t.name === data.toolName && t.status === "running"
+                    ? { ...t, status: "completed", success: data.result?.success }
+                    : t
+                );
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantMessageId
+                      ? { ...m, tools: currentTools }
+                      : m
+                  )
+                );
+                break;
+
+              case "done":
+                if (data.navigate) {
+                  navigateTo = data.navigate;
+                }
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantMessageId
+                      ? { ...m, isStreaming: false }
+                      : m
+                  )
+                );
+                break;
+
+              case "error":
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantMessageId
+                      ? {
+                          ...m,
+                          content: currentContent || `Error: ${data.error}`,
+                          isStreaming: false,
+                        }
+                      : m
+                  )
+                );
+                break;
+            }
+          } catch {
+            // Ignore parse errors for incomplete chunks
+          }
+        }
+      }
+
+      // Handle navigation after streaming completes
+      if (navigateTo) {
+        setTimeout(() => {
+          setOpen(false);
+          router.push(navigateTo);
+        }, 500);
+      }
+    } catch (error) {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantMessageId
+            ? {
+                ...m,
+                content: "Sorry, I encountered an error. Please try again.",
+                isStreaming: false,
+              }
+            : m
+        )
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [input, loading, conversationId, router]);
+
+  // Legacy send function (fallback)
+  const sendMessageLegacy = useCallback(async () => {
     if (!input.trim() || loading) return;
 
     const userMessage: Message = {
@@ -136,7 +343,6 @@ export function AIAgent() {
 
       setMessages((prev) => [...prev, assistantMessage]);
 
-      // Handle navigation if needed
       if (data.navigate) {
         setTimeout(() => {
           setOpen(false);
@@ -155,6 +361,15 @@ export function AIAgent() {
       setLoading(false);
     }
   }, [input, loading, messages, router]);
+
+  // Choose which send function to use
+  const sendMessage = useCallback(() => {
+    if (useNewAgent) {
+      sendMessageStreaming();
+    } else {
+      sendMessageLegacy();
+    }
+  }, [useNewAgent, sendMessageStreaming, sendMessageLegacy]);
 
   function clearChat() {
     setMessages([]);
@@ -302,7 +517,37 @@ export function AIAgent() {
                     </ReactMarkdown>
                   </div>
 
-                  {/* Action badges */}
+                  {/* Tool execution indicators */}
+                  {message.tools && message.tools.length > 0 && (
+                    <div className="mt-2.5 pt-2 border-t border-white/10 space-y-1.5">
+                      {message.tools.map((tool, i) => (
+                        <div
+                          key={i}
+                          className={clsx(
+                            "flex items-center gap-2 text-xs px-2 py-1 rounded-md",
+                            tool.status === "running"
+                              ? "bg-blue-500/10 text-blue-400"
+                              : tool.success
+                              ? "bg-emerald-500/10 text-emerald-400"
+                              : "bg-rose-500/10 text-rose-400"
+                          )}
+                        >
+                          {tool.status === "running" ? (
+                            <Loader2 size={12} className="shrink-0 animate-spin" />
+                          ) : tool.success ? (
+                            <CheckCircle2 size={12} className="shrink-0" />
+                          ) : (
+                            <AlertCircle size={12} className="shrink-0" />
+                          )}
+                          <span className="leading-tight font-mono">
+                            {formatToolName(tool.name)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Legacy action badges */}
                   {message.actions && message.actions.length > 0 && (
                     <div className="mt-2.5 pt-2 border-t border-white/10 space-y-1.5">
                       {message.actions
@@ -312,8 +557,8 @@ export function AIAgent() {
                             key={i}
                             className={clsx(
                               "flex items-center gap-2 text-xs px-2 py-1 rounded-md",
-                              action.success 
-                                ? "bg-emerald-500/10 text-emerald-400" 
+                              action.success
+                                ? "bg-emerald-500/10 text-emerald-400"
                                 : "bg-rose-500/10 text-rose-400"
                             )}
                           >
@@ -336,7 +581,7 @@ export function AIAgent() {
               </div>
             ))}
 
-            {loading && (
+            {loading && !messages.some((m) => m.isStreaming) && (
               <div className="flex gap-3">
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/10">
                   <Bot size={16} className="text-primary" />
