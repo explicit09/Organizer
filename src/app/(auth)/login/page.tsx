@@ -2,6 +2,10 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Button } from "../../../components/ui/Button";
+import { Input, FormField } from "../../../components/ui/Input";
+import { Mail, Lock, ArrowRight } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -37,60 +41,68 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-          Organizer
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="text-center">
+        <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-primary text-primary-foreground text-lg font-bold mb-4">
+          O
         </div>
-        <h1 className="mt-2 text-xl font-semibold text-white">Sign in</h1>
-        <p className="mt-1.5 text-xs text-muted-foreground">
-          Access your personal command center.
+        <h1 className="text-xl font-semibold text-foreground">Welcome back</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Sign in to continue to Organizer
         </p>
       </div>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <div>
-          <label className="text-[10px] uppercase tracking-wider text-muted-foreground">
-            Email
-          </label>
-          <input
+
+      {/* Form */}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <FormField label="Email">
+          <Input
             type="email"
-            required
-            className="mt-2 w-full rounded-lg border border-white/[0.08] bg-[#09090b] px-3 py-2.5 text-sm text-white outline-none focus:border-primary/40 placeholder:text-muted-foreground"
+            placeholder="you@example.com"
             value={email}
-            onChange={(event) => setEmail(event.target.value)}
-          />
-        </div>
-        <div>
-          <label className="text-[10px] uppercase tracking-wider text-muted-foreground">
-            Password
-          </label>
-          <input
-            type="password"
+            onChange={(e) => setEmail(e.target.value)}
+            icon={<Mail size={16} />}
             required
-            className="mt-2 w-full rounded-lg border border-white/[0.08] bg-[#09090b] px-3 py-2.5 text-sm text-white outline-none focus:border-primary/40 placeholder:text-muted-foreground"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
           />
-        </div>
-        <button
-          type="submit"
-          disabled={!email || !password || isSubmitting}
-          className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {isSubmitting ? "Signing in..." : "Sign in"}
-        </button>
-        {error ? (
-          <div className="rounded-lg border border-rose-500/20 bg-rose-500/10 px-3 py-2.5 text-xs text-rose-400">
+        </FormField>
+
+        <FormField label="Password">
+          <Input
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            icon={<Lock size={16} />}
+            required
+          />
+        </FormField>
+
+        {error && (
+          <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
             {error}
           </div>
-        ) : null}
+        )}
+
+        <Button
+          type="submit"
+          disabled={!email || !password || isSubmitting}
+          loading={isSubmitting}
+          className="w-full"
+        >
+          Sign in
+          <ArrowRight size={16} />
+        </Button>
       </form>
-      <div className="text-xs text-muted-foreground">
-        Need an account?{" "}
-        <a className="font-medium text-primary hover:text-primary/80 transition-colors" href="/register">
+
+      {/* Footer */}
+      <div className="text-center text-sm text-muted-foreground">
+        Don't have an account?{" "}
+        <Link 
+          href="/register" 
+          className="font-medium text-primary hover:text-primary/80 transition-colors"
+        >
           Create one
-        </a>
-        .
+        </Link>
       </div>
     </div>
   );
