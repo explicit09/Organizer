@@ -983,6 +983,27 @@ textarea:focus-visible,
   }
 }
 
+/* Full-bleed page - for pages that need edge-to-edge layout */
+.page-full-bleed {
+  position: absolute;
+  inset: 0;
+  max-width: none !important;
+  overflow: hidden;
+}
+
+/* When page-full-bleed is present, override parent styles */
+.page-container:has(.page-full-bleed) {
+  position: relative;
+  padding: 0;
+  max-width: none;
+  height: 100%;
+}
+
+main:has(.page-full-bleed) {
+  overflow: hidden;
+  position: relative;
+}
+
 /* Grid layouts */
 .grid-auto-fill {
   display: grid;

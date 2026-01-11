@@ -2,97 +2,174 @@
 
 import { clsx } from "clsx";
 
-type Status = "active" | "in_progress" | "pending" | "completed" | "blocked" | "cancelled";
+type Status = "not_started" | "in_progress" | "blocked" | "completed" | "cancelled";
 type Priority = "urgent" | "high" | "medium" | "low";
 
 interface StatusBadgeProps {
   status?: Status;
   priority?: Priority;
+  size?: "sm" | "md";
+  showLabel?: boolean;
   className?: string;
 }
 
-const statusStyles: Record<Status, { dot: string; badge: string }> = {
-  active: {
-    dot: "bg-teal-500",
-    badge: "text-teal-400 border-teal-500/30 bg-teal-500/10",
+// Linear-inspired status colors
+const statusConfig: Record<Status, { color: string; bg: string; label: string }> = {
+  not_started: {
+    color: "text-[hsl(228_5%_55%)]",
+    bg: "bg-[hsl(228_5%_55%/0.15)]",
+    label: "Todo",
   },
   in_progress: {
-    dot: "bg-blue-500",
-    badge: "text-blue-400 border-blue-500/30 bg-blue-500/10",
-  },
-  pending: {
-    dot: "bg-zinc-400",
-    badge: "text-zinc-400 border-zinc-500/30 bg-zinc-500/10",
-  },
-  completed: {
-    dot: "bg-emerald-500",
-    badge: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
+    color: "text-[hsl(45_95%_55%)]",
+    bg: "bg-[hsl(45_95%_55%/0.15)]",
+    label: "In Progress",
   },
   blocked: {
-    dot: "bg-orange-500",
-    badge: "text-orange-400 border-orange-500/30 bg-orange-500/10",
+    color: "text-[hsl(25_95%_55%)]",
+    bg: "bg-[hsl(25_95%_55%/0.15)]",
+    label: "Blocked",
+  },
+  completed: {
+    color: "text-[hsl(142_65%_48%)]",
+    bg: "bg-[hsl(142_65%_48%/0.15)]",
+    label: "Done",
   },
   cancelled: {
-    dot: "bg-rose-500",
-    badge: "text-rose-400 border-rose-500/30 bg-rose-500/10",
+    color: "text-[hsl(228_5%_40%)]",
+    bg: "bg-[hsl(228_5%_40%/0.15)]",
+    label: "Cancelled",
   },
 };
 
-const priorityStyles: Record<Priority, { dot: string; badge: string }> = {
+const priorityConfig: Record<Priority, { color: string; bg: string; label: string }> = {
   urgent: {
-    dot: "bg-rose-500",
-    badge: "text-rose-400 border-rose-500/30 bg-rose-500/10",
+    color: "text-[hsl(0_72%_55%)]",
+    bg: "bg-[hsl(0_72%_55%/0.15)]",
+    label: "Urgent",
   },
   high: {
-    dot: "bg-amber-500",
-    badge: "text-amber-400 border-amber-500/30 bg-amber-500/10",
+    color: "text-[hsl(25_95%_55%)]",
+    bg: "bg-[hsl(25_95%_55%/0.15)]",
+    label: "High",
   },
   medium: {
-    dot: "bg-blue-500",
-    badge: "text-blue-400 border-blue-500/30 bg-blue-500/10",
+    color: "text-[hsl(238_65%_62%)]",
+    bg: "bg-[hsl(238_65%_62%/0.15)]",
+    label: "Medium",
   },
   low: {
-    dot: "bg-zinc-400",
-    badge: "text-zinc-400 border-zinc-500/30 bg-zinc-500/10",
+    color: "text-[hsl(228_5%_50%)]",
+    bg: "bg-[hsl(228_5%_50%/0.15)]",
+    label: "Low",
   },
 };
 
-function formatLabel(value: string): string {
-  return value.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
-export function StatusBadge({ status, priority, className }: StatusBadgeProps) {
+export function StatusBadge({ 
+  status, 
+  priority, 
+  size = "sm",
+  showLabel = true, 
+  className 
+}: StatusBadgeProps) {
   if (status) {
-    const styles = statusStyles[status] || statusStyles.pending;
+    const config = statusConfig[status] || statusConfig.not_started;
     return (
       <span
         className={clsx(
-          "inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide",
-          styles.badge,
+          "inline-flex items-center gap-1.5 rounded font-medium",
+          size === "sm" ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-1 text-xs",
+          config.color,
+          config.bg,
           className
         )}
       >
-        <span className={clsx("h-1.5 w-1.5 rounded-full", styles.dot)} />
-        {formatLabel(status)}
+        <StatusDot status={status} />
+        {showLabel && config.label}
       </span>
     );
   }
 
   if (priority) {
-    const styles = priorityStyles[priority] || priorityStyles.medium;
+    const config = priorityConfig[priority] || priorityConfig.medium;
     return (
       <span
         className={clsx(
-          "inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide",
-          styles.badge,
+          "inline-flex items-center gap-1.5 rounded font-medium",
+          size === "sm" ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-1 text-xs",
+          config.color,
+          config.bg,
           className
         )}
       >
-        <span className={clsx("h-1.5 w-1.5 rounded-full", styles.dot)} />
-        {formatLabel(priority)}
+        <PriorityIcon priority={priority} />
+        {showLabel && config.label}
       </span>
     );
   }
 
   return null;
+}
+
+// Just the status dot
+export function StatusDot({ 
+  status, 
+  className 
+}: { 
+  status: Status; 
+  className?: string;
+}) {
+  const dotColors: Record<Status, string> = {
+    not_started: "bg-[hsl(228_5%_55%)]",
+    in_progress: "bg-[hsl(45_95%_55%)]",
+    blocked: "bg-[hsl(25_95%_55%)]",
+    completed: "bg-[hsl(142_65%_48%)]",
+    cancelled: "bg-[hsl(228_5%_40%)]",
+  };
+
+  return (
+    <span 
+      className={clsx(
+        "w-2 h-2 rounded-full flex-shrink-0",
+        dotColors[status] || dotColors.not_started,
+        className
+      )} 
+    />
+  );
+}
+
+// Priority icon (bars)
+export function PriorityIcon({ 
+  priority, 
+  className 
+}: { 
+  priority: Priority; 
+  className?: string;
+}) {
+  const colors: Record<Priority, string> = {
+    urgent: "text-[hsl(0_72%_55%)]",
+    high: "text-[hsl(25_95%_55%)]",
+    medium: "text-[hsl(238_65%_62%)]",
+    low: "text-[hsl(228_5%_50%)]",
+  };
+
+  const bars = priority === "urgent" ? 4 : priority === "high" ? 3 : priority === "medium" ? 2 : 1;
+
+  return (
+    <div className={clsx("flex items-end gap-[2px] h-3", colors[priority], className)}>
+      {[1, 2, 3, 4].map((i) => (
+        <div
+          key={i}
+          className={clsx(
+            "w-[3px] rounded-[1px] transition-all",
+            i <= bars ? "bg-current" : "bg-current/20",
+            i === 1 && "h-1",
+            i === 2 && "h-1.5",
+            i === 3 && "h-2",
+            i === 4 && "h-2.5"
+          )}
+        />
+      ))}
+    </div>
+  );
 }

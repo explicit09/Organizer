@@ -1,71 +1,118 @@
-import * as React from "react"
-import { Slot } from "@radix-ui/react-slot"
-import { type VariantProps, cva } from "class-variance-authority"
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
+import * as React from "react";
+import { Slot } from "@radix-ui/react-slot";
+import { type VariantProps, cva } from "class-variance-authority";
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 function cn(...inputs: ClassValue[]) {
-    return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
 const buttonVariants = cva(
-    "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#09090b] disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]",
-    {
-        variants: {
-            variant: {
-                default:
-                    "bg-primary text-white shadow-[0_0_20px_rgba(139,92,246,0.25)] hover:bg-primary/90 hover:shadow-[0_0_25px_rgba(139,92,246,0.4)] border border-primary/30",
-                destructive:
-                    "bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20 hover:border-rose-500/30",
-                outline:
-                    "border border-white/[0.08] bg-transparent hover:bg-white/[0.04] hover:border-white/[0.15] text-white",
-                secondary:
-                    "bg-white/[0.04] text-white border border-white/[0.08] hover:bg-white/[0.08] hover:border-white/[0.12]",
-                ghost:
-                    "text-muted-foreground hover:bg-white/[0.04] hover:text-white",
-                link:
-                    "text-primary underline-offset-4 hover:underline p-0 h-auto",
-                glass:
-                    "bg-white/[0.03] border border-white/[0.06] text-white hover:bg-white/[0.06] hover:border-white/[0.12] backdrop-blur-xl",
-                neon:
-                    "bg-gradient-to-r from-primary via-primary to-accent text-white font-semibold shadow-[0_0_20px_rgba(139,92,246,0.4)] hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] border-0",
-                success:
-                    "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 hover:border-emerald-500/30",
-            },
-            size: {
-                default: "h-10 px-5 py-2",
-                sm: "h-8 px-3 text-xs rounded-md",
-                lg: "h-12 px-8 text-base rounded-xl",
-                xl: "h-14 px-10 text-lg rounded-xl font-semibold",
-                icon: "h-10 w-10 p-0",
-                "icon-sm": "h-8 w-8 p-0 rounded-md",
-            },
-        },
-        defaultVariants: {
-            variant: "default",
-            size: "default",
-        },
-    }
-)
+  // Base styles - Linear-inspired clean, minimal approach
+  [
+    "inline-flex items-center justify-center gap-2",
+    "whitespace-nowrap rounded-md",
+    "text-sm font-medium",
+    "transition-all duration-150 ease-out",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+    "disabled:pointer-events-none disabled:opacity-50",
+    "active:scale-[0.98]",
+    "select-none",
+  ],
+  {
+    variants: {
+      variant: {
+        // Primary - Solid indigo, clean and bold
+        default: [
+          "bg-primary text-primary-foreground",
+          "hover:bg-primary/90",
+          "border border-primary/20",
+        ],
+        // Secondary - Subtle background, works anywhere
+        secondary: [
+          "bg-secondary text-secondary-foreground",
+          "border border-border",
+          "hover:bg-accent hover:border-border/80",
+        ],
+        // Outline - Just borders, minimal fill
+        outline: [
+          "bg-transparent text-foreground",
+          "border border-border",
+          "hover:bg-accent hover:border-border/80",
+        ],
+        // Ghost - No borders, no fill, just text
+        ghost: [
+          "bg-transparent text-muted-foreground",
+          "hover:bg-accent hover:text-foreground",
+        ],
+        // Destructive - Red for danger actions
+        destructive: [
+          "bg-destructive/10 text-destructive",
+          "border border-destructive/20",
+          "hover:bg-destructive/20 hover:border-destructive/30",
+        ],
+        // Success - Green for positive actions
+        success: [
+          "bg-[hsl(142_65%_48%/0.1)] text-[hsl(142_65%_48%)]",
+          "border border-[hsl(142_65%_48%/0.2)]",
+          "hover:bg-[hsl(142_65%_48%/0.2)] hover:border-[hsl(142_65%_48%/0.3)]",
+        ],
+        // Link - Text only, no button styling
+        link: [
+          "text-primary underline-offset-4",
+          "hover:underline",
+          "p-0 h-auto",
+        ],
+      },
+      size: {
+        default: "h-9 px-4 py-2",
+        sm: "h-8 px-3 text-xs",
+        lg: "h-10 px-6",
+        xl: "h-11 px-8 text-base",
+        icon: "h-9 w-9 p-0",
+        "icon-sm": "h-8 w-8 p-0",
+        "icon-xs": "h-6 w-6 p-0 text-xs",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "default",
+    },
+  }
+);
 
 export interface ButtonProps
-    extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
-    asChild?: boolean
+  asChild?: boolean;
+  loading?: boolean;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-    ({ className, variant, size, asChild = false, ...props }, ref) => {
-        const Comp = asChild ? Slot : "button"
-        return (
-            <Comp
-                className={cn(buttonVariants({ variant, size, className }))}
-                ref={ref}
-                {...props}
-            />
-        )
-    }
-)
-Button.displayName = "Button"
+  ({ className, variant, size, asChild = false, loading = false, children, disabled, ...props }, ref) => {
+    const Comp = asChild ? Slot : "button";
+    
+    return (
+      <Comp
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        disabled={disabled || loading}
+        {...props}
+      >
+        {loading ? (
+          <>
+            <span className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+            <span className="sr-only">Loading</span>
+          </>
+        ) : (
+          children
+        )}
+      </Comp>
+    );
+  }
+);
 
-export { Button, buttonVariants }
+Button.displayName = "Button";
+
+export { Button, buttonVariants };

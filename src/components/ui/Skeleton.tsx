@@ -44,3 +44,48 @@ export function SkeletonTable() {
     </div>
   );
 }
+
+export function SkeletonChart({ rows = 3 }: { rows?: number }) {
+  return (
+    <div className="space-y-2">
+      {Array.from({ length: rows }).map((_, i) => (
+        <Skeleton key={i} className="h-12 rounded-lg" />
+      ))}
+    </div>
+  );
+}
+
+export function SkeletonStats() {
+  return (
+    <div className="space-y-3">
+      <Skeleton className="h-16 rounded-lg" />
+      <Skeleton className="h-8 rounded-lg" />
+    </div>
+  );
+}
+
+export function SkeletonNotification({ count = 3 }: { count?: number }) {
+  return (
+    <div className="space-y-3 p-4">
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="flex gap-3 animate-pulse">
+          <div className="h-8 w-8 rounded-full bg-muted" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-3 w-1/2" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function SkeletonInsightCard({ count = 3 }: { count?: number }) {
+  return (
+    <div className="space-y-2">
+      {Array.from({ length: count }).map((_, i) => (
+        <Skeleton key={i} className="h-12 rounded-lg bg-accent/20" />
+      ))}
+    </div>
+  );
+}
