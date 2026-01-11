@@ -34,6 +34,10 @@ export async function POST(req: Request) {
           type: entry.type,
           title: entry.title,
           priority: entry.priority,
+          dueAt: entry.dueAt || undefined,
+          estimatedMinutes: entry.estimatedMinutes || undefined,
+          recurrenceRule: entry.recurrenceRule || undefined,
+          agenda: entry.agenda || undefined,
         },
         { userId }
       );
@@ -48,6 +52,7 @@ export async function POST(req: Request) {
                 title,
                 parentId: parent.id,
                 priority: entry.priority,
+                dueAt: entry.dueAt || undefined, // Inherit parent's due date
               },
               { userId }
             )

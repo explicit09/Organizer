@@ -294,3 +294,29 @@ export function formatRelativeDate(date: Date | string): string {
 
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
+
+export function formatTimeAgo(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  // Handle future dates
+  if (diffMins < 0) {
+    if (diffMins > -60) return `in ${-diffMins}m`;
+    if (diffHours > -24) return `in ${-diffHours}h`;
+    return `in ${-diffDays}d`;
+  }
+
+  if (diffMins < 1) return "just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  return `${diffDays}d ago`;
+}
+
+export function formatTime(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+}

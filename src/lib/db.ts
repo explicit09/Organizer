@@ -409,6 +409,469 @@ ensureColumn("items", "assignee_id", "TEXT"); // Assigned user
 ensureColumn("items", "module_id", "TEXT"); // Link to module
 ensureColumn("items", "area", "TEXT"); // Life area: work, personal, health, learning, finance, relationships, side_projects
 
+// AI Agent Memory Tables
+db.exec(`
+  -- User Preferences (learned by AI)
+  CREATE TABLE IF NOT EXISTS user_preferences (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    category TEXT NOT NULL,
+    key TEXT NOT NULL,
+    value TEXT NOT NULL,
+    confidence TEXT DEFAULT 'explicit',
+    source TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    UNIQUE(user_id, category, key)
+  );
+
+  -- AI Memory (observations, facts, patterns)
+  CREATE TABLE IF NOT EXISTS ai_memory (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    type TEXT NOT NULL,
+    category TEXT NOT NULL,
+    content TEXT NOT NULL,
+    significance TEXT DEFAULT 'medium',
+    embedding TEXT,
+    created_at TEXT NOT NULL,
+    expires_at TEXT,
+    access_count INTEGER DEFAULT 0,
+    last_accessed_at TEXT
+  );
+
+  -- User Behavioral Patterns (detected by AI)
+  CREATE TABLE IF NOT EXISTS user_patterns (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    pattern_type TEXT NOT NULL,
+    pattern_data TEXT NOT NULL,
+    confidence REAL DEFAULT 0.5,
+    sample_size INTEGER DEFAULT 0,
+    first_observed_at TEXT NOT NULL,
+    last_updated_at TEXT NOT NULL,
+    UNIQUE(user_id, pattern_type)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_user_preferences_user ON user_preferences(user_id);
+  CREATE INDEX IF NOT EXISTS idx_user_preferences_category ON user_preferences(user_id, category);
+  CREATE INDEX IF NOT EXISTS idx_ai_memory_user_type ON ai_memory(user_id, type);
+  CREATE INDEX IF NOT EXISTS idx_ai_memory_category ON ai_memory(user_id, category);
+  CREATE INDEX IF NOT EXISTS idx_user_patterns_user ON user_patterns(user_id);
+`);
+
+// Add new columns to ai_conversations if they don't exist
+ensureColumn("ai_conversations", "tool_calls_json", "TEXT");
+ensureColumn("ai_conversations", "context_used_json", "TEXT");
+ensureColumn("ai_conversations", "feedback", "TEXT");
+ensureColumn("ai_conversations", "tokens_used", "INTEGER");
+
+// Phase 2: Intelligence Layer Tables
+db.exec(`
+  -- Context Cache (for performance optimization)
+  CREATE TABLE IF NOT EXISTS context_cache (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    context_type TEXT NOT NULL,
+    data_json TEXT NOT NULL,
+    computed_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    cache_key TEXT NOT NULL,
+    UNIQUE(user_id, context_type, cache_key)
+  );
+
+  -- Morning Briefings (store generated briefings)
+  CREATE TABLE IF NOT EXISTS briefings (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    date TEXT NOT NULL,
+    briefing_json TEXT NOT NULL,
+    suggested_focus_id TEXT,
+    config_json TEXT,
+    delivered_at TEXT,
+    viewed_at TEXT,
+    feedback TEXT,
+    created_at TEXT NOT NULL,
+    UNIQUE(user_id, date)
+  );
+
+  -- Reschedule History (track rescheduling decisions)
+  CREATE TABLE IF NOT EXISTS reschedule_history (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    item_id TEXT NOT NULL,
+    original_due_at TEXT,
+    new_due_at TEXT NOT NULL,
+    reason TEXT NOT NULL,
+    ai_confidence REAL,
+    user_accepted INTEGER,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE
+  );
+
+  -- AI Metrics (track intelligence system performance)
+  CREATE TABLE IF NOT EXISTS ai_metrics (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    metric_type TEXT NOT NULL,
+    metric_name TEXT NOT NULL,
+    metric_value REAL NOT NULL,
+    metadata_json TEXT,
+    created_at TEXT NOT NULL
+  );
+
+  -- Goal Progress Snapshots (track goal progress over time)
+  CREATE TABLE IF NOT EXISTS goal_snapshots (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    goal_id TEXT NOT NULL,
+    progress_value REAL NOT NULL,
+    aligned_hours REAL,
+    alignment_score REAL,
+    snapshot_date TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (goal_id) REFERENCES goals(id) ON DELETE CASCADE
+  );
+
+  -- Drift Alerts (track when goal drift is detected)
+  CREATE TABLE IF NOT EXISTS drift_alerts (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    severity TEXT NOT NULL,
+    drift_direction TEXT,
+    explanation TEXT NOT NULL,
+    recommendations_json TEXT,
+    acknowledged_at TEXT,
+    created_at TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_context_cache_user ON context_cache(user_id);
+  CREATE INDEX IF NOT EXISTS idx_context_cache_expires ON context_cache(expires_at);
+  CREATE INDEX IF NOT EXISTS idx_briefings_user_date ON briefings(user_id, date);
+  CREATE INDEX IF NOT EXISTS idx_reschedule_history_item ON reschedule_history(item_id);
+  CREATE INDEX IF NOT EXISTS idx_ai_metrics_user_type ON ai_metrics(user_id, metric_type);
+  CREATE INDEX IF NOT EXISTS idx_goal_snapshots_goal ON goal_snapshots(goal_id);
+  CREATE INDEX IF NOT EXISTS idx_drift_alerts_user ON drift_alerts(user_id);
+`);
+
+// Add goal columns if missing
+ensureColumn("goals", "area", "TEXT");
+ensureColumn("goals", "project_id", "TEXT");
+
+// Phase 3: Proactive Intelligence Tables
+db.exec(`
+  -- Trigger State (track cooldowns and trigger history)
+  CREATE TABLE IF NOT EXISTS trigger_state (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    trigger_type TEXT NOT NULL,
+    last_triggered TEXT NOT NULL,
+    trigger_count INTEGER DEFAULT 1,
+    UNIQUE(user_id, trigger_type)
+  );
+
+  -- Proactive Notifications (all proactive messages sent)
+  CREATE TABLE IF NOT EXISTS proactive_notifications (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    trigger_type TEXT NOT NULL,
+    message_json TEXT NOT NULL,
+    channels_json TEXT NOT NULL,
+    sent_at TEXT NOT NULL,
+    read_at TEXT,
+    action_taken TEXT,
+    dismissed INTEGER DEFAULT 0
+  );
+
+  -- User Trigger Preferences (enable/disable triggers, cooldowns)
+  CREATE TABLE IF NOT EXISTS user_trigger_preferences (
+    user_id TEXT PRIMARY KEY,
+    disabled_triggers_json TEXT,
+    custom_cooldowns_json TEXT,
+    notification_prefs_json TEXT,
+    updated_at TEXT NOT NULL
+  );
+
+  -- In-App Notifications (UI notifications)
+  CREATE TABLE IF NOT EXISTS in_app_notifications (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    notification_json TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    shown INTEGER DEFAULT 0,
+    dismissed INTEGER DEFAULT 0
+  );
+
+  -- Notification Queue (queued for later delivery)
+  CREATE TABLE IF NOT EXISTS notification_queue (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    message_json TEXT NOT NULL,
+    queued_at TEXT NOT NULL,
+    deliver_after TEXT NOT NULL,
+    delivered INTEGER DEFAULT 0
+  );
+
+  -- Action Log (audit trail for auto-actions)
+  CREATE TABLE IF NOT EXISTS action_log (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    action_type TEXT NOT NULL,
+    params_json TEXT,
+    result_json TEXT,
+    executed_at TEXT NOT NULL
+  );
+
+  -- Automation Rules (user-configurable automations)
+  CREATE TABLE IF NOT EXISTS automation_rules (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    enabled INTEGER DEFAULT 1,
+    trigger_json TEXT NOT NULL,
+    actions_json TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    last_triggered_at TEXT,
+    trigger_count INTEGER DEFAULT 0,
+    deleted_at TEXT
+  );
+
+  -- Check-in Configurations (morning briefing, evening wrapup settings)
+  CREATE TABLE IF NOT EXISTS checkin_configs (
+    user_id TEXT NOT NULL,
+    type TEXT NOT NULL,
+    preferred_time TEXT NOT NULL,
+    preferred_day TEXT,
+    enabled INTEGER DEFAULT 1,
+    channels_json TEXT NOT NULL,
+    updated_at TEXT,
+    PRIMARY KEY (user_id, type)
+  );
+
+  -- Breaks (track user breaks for wellbeing)
+  CREATE TABLE IF NOT EXISTS breaks (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    started_at TEXT NOT NULL,
+    ended_at TEXT,
+    planned_duration INTEGER
+  );
+
+  -- Reminders (user-set reminders)
+  CREATE TABLE IF NOT EXISTS reminders (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    item_id TEXT,
+    habit_id TEXT,
+    remind_at TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    delivered_at TEXT
+  );
+
+  -- Habit Completions (separate from habit_logs for proactive system)
+  CREATE TABLE IF NOT EXISTS habit_completions (
+    id TEXT PRIMARY KEY,
+    habit_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    completed_at TEXT NOT NULL,
+    FOREIGN KEY (habit_id) REFERENCES habits(id) ON DELETE CASCADE
+  );
+
+  -- User Settings (generic key-value settings)
+  CREATE TABLE IF NOT EXISTS user_settings (
+    user_id TEXT NOT NULL,
+    key TEXT NOT NULL,
+    value_json TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (user_id, key)
+  );
+
+  -- Wellbeing Assessments (periodic assessments)
+  CREATE TABLE IF NOT EXISTS wellbeing_assessments (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    indicators_json TEXT NOT NULL,
+    warnings_json TEXT NOT NULL,
+    overall_status TEXT NOT NULL,
+    suggestions_json TEXT,
+    created_at TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_trigger_state_user ON trigger_state(user_id);
+  CREATE INDEX IF NOT EXISTS idx_proactive_notifications_user ON proactive_notifications(user_id);
+  CREATE INDEX IF NOT EXISTS idx_proactive_notifications_sent ON proactive_notifications(sent_at);
+  CREATE INDEX IF NOT EXISTS idx_in_app_notifications_user ON in_app_notifications(user_id);
+  CREATE INDEX IF NOT EXISTS idx_notification_queue_deliver ON notification_queue(deliver_after);
+  CREATE INDEX IF NOT EXISTS idx_action_log_user ON action_log(user_id);
+  CREATE INDEX IF NOT EXISTS idx_automation_rules_user ON automation_rules(user_id);
+  CREATE INDEX IF NOT EXISTS idx_breaks_user ON breaks(user_id);
+  CREATE INDEX IF NOT EXISTS idx_reminders_user ON reminders(user_id);
+  CREATE INDEX IF NOT EXISTS idx_reminders_remind_at ON reminders(remind_at);
+  CREATE INDEX IF NOT EXISTS idx_habit_completions_habit ON habit_completions(habit_id);
+  CREATE INDEX IF NOT EXISTS idx_wellbeing_assessments_user ON wellbeing_assessments(user_id);
+`);
+
+// Add status column to focus_sessions if missing
+ensureColumn("focus_sessions", "status", "TEXT DEFAULT 'active'");
+
+// Add deleted_at column to items if missing
+ensureColumn("items", "deleted_at", "TEXT");
+
+// Phase 4: Adaptive Learning Tables
+db.exec(`
+  -- Learning Events (all events that the learning system observes)
+  CREATE TABLE IF NOT EXISTS learning_events (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    event_type TEXT NOT NULL,
+    event_data TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  );
+
+  -- Productivity Records (hourly/daily productivity observations)
+  CREATE TABLE IF NOT EXISTS productivity_records (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    record_type TEXT NOT NULL,
+    hour INTEGER,
+    day_of_week TEXT,
+    score REAL NOT NULL,
+    sample_count INTEGER DEFAULT 1,
+    task_type TEXT,
+    task_size TEXT,
+    project_id TEXT,
+    created_at TEXT NOT NULL
+  );
+
+  -- Estimation Records (track estimated vs actual time)
+  CREATE TABLE IF NOT EXISTS estimation_records (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    task_id TEXT,
+    task_type TEXT NOT NULL,
+    task_size TEXT NOT NULL,
+    estimated_minutes INTEGER NOT NULL,
+    actual_minutes INTEGER,
+    accuracy REAL,
+    title TEXT,
+    project_id TEXT,
+    created_at TEXT NOT NULL
+  );
+
+  -- Behavior Records (track interactions with suggestions, notifications, etc.)
+  CREATE TABLE IF NOT EXISTS behavior_records (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    record_type TEXT NOT NULL,
+    suggestion_type TEXT,
+    notification_type TEXT,
+    outcome TEXT,
+    reason TEXT,
+    hour INTEGER,
+    channel TEXT,
+    word_count INTEGER,
+    has_emoji INTEGER,
+    is_brief INTEGER,
+    is_detailed INTEGER,
+    is_technical INTEGER,
+    feedback TEXT,
+    rating INTEGER,
+    created_at TEXT NOT NULL
+  );
+
+  -- User Models (cached computed models per user)
+  CREATE TABLE IF NOT EXISTS user_models (
+    user_id TEXT PRIMARY KEY,
+    model_json TEXT NOT NULL,
+    samples_used INTEGER DEFAULT 0,
+    overall_confidence REAL DEFAULT 0,
+    updated_at TEXT NOT NULL
+  );
+
+  -- Implicit Preferences (learned from behavior)
+  CREATE TABLE IF NOT EXISTS implicit_preferences (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    category TEXT NOT NULL,
+    key TEXT NOT NULL,
+    value TEXT NOT NULL,
+    confidence REAL DEFAULT 0.5,
+    source TEXT NOT NULL,
+    first_observed_at TEXT NOT NULL,
+    last_confirmed_at TEXT NOT NULL,
+    UNIQUE(user_id, category, key)
+  );
+
+  -- Learning Feedback (explicit feedback from users)
+  CREATE TABLE IF NOT EXISTS learning_feedback (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    feedback_type TEXT NOT NULL,
+    context TEXT NOT NULL,
+    rating INTEGER,
+    comment TEXT,
+    correction TEXT,
+    timestamp TEXT NOT NULL
+  );
+
+  -- Predictions (track prediction accuracy)
+  CREATE TABLE IF NOT EXISTS predictions (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    prediction_type TEXT NOT NULL,
+    predicted_value TEXT NOT NULL,
+    actual_value TEXT,
+    accuracy REAL,
+    context TEXT,
+    predicted_at TEXT NOT NULL,
+    resolved_at TEXT
+  );
+
+  -- Suggestion History (track all suggestions made)
+  CREATE TABLE IF NOT EXISTS suggestion_history (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    suggestion_type TEXT NOT NULL,
+    suggestion_json TEXT NOT NULL,
+    confidence REAL,
+    predicted_acceptance REAL,
+    personalization_applied INTEGER DEFAULT 0,
+    outcome TEXT,
+    outcome_at TEXT,
+    created_at TEXT NOT NULL
+  );
+
+  -- Model Update History (track when models are updated)
+  CREATE TABLE IF NOT EXISTS model_update_history (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    model_type TEXT NOT NULL,
+    events_processed INTEGER DEFAULT 0,
+    confidence_before REAL,
+    confidence_after REAL,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_learning_events_user ON learning_events(user_id);
+  CREATE INDEX IF NOT EXISTS idx_learning_events_type ON learning_events(user_id, event_type);
+  CREATE INDEX IF NOT EXISTS idx_learning_events_created ON learning_events(created_at);
+  CREATE INDEX IF NOT EXISTS idx_productivity_records_user ON productivity_records(user_id);
+  CREATE INDEX IF NOT EXISTS idx_productivity_records_type ON productivity_records(user_id, record_type);
+  CREATE INDEX IF NOT EXISTS idx_estimation_records_user ON estimation_records(user_id);
+  CREATE INDEX IF NOT EXISTS idx_estimation_records_type ON estimation_records(user_id, task_type);
+  CREATE INDEX IF NOT EXISTS idx_behavior_records_user ON behavior_records(user_id);
+  CREATE INDEX IF NOT EXISTS idx_behavior_records_type ON behavior_records(user_id, record_type);
+  CREATE INDEX IF NOT EXISTS idx_implicit_preferences_user ON implicit_preferences(user_id);
+  CREATE INDEX IF NOT EXISTS idx_implicit_preferences_category ON implicit_preferences(user_id, category);
+  CREATE INDEX IF NOT EXISTS idx_learning_feedback_user ON learning_feedback(user_id);
+  CREATE INDEX IF NOT EXISTS idx_learning_feedback_type ON learning_feedback(user_id, feedback_type);
+  CREATE INDEX IF NOT EXISTS idx_predictions_user ON predictions(user_id);
+  CREATE INDEX IF NOT EXISTS idx_predictions_type ON predictions(user_id, prediction_type);
+  CREATE INDEX IF NOT EXISTS idx_suggestion_history_user ON suggestion_history(user_id);
+  CREATE INDEX IF NOT EXISTS idx_suggestion_history_type ON suggestion_history(user_id, suggestion_type);
+  CREATE INDEX IF NOT EXISTS idx_model_update_history_user ON model_update_history(user_id);
+`);
+
 export function getDb() {
   return db;
 }

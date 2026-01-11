@@ -1,15 +1,15 @@
-import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Space_Grotesk } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-const jakarta = Plus_Jakarta_Sans({
+const geist = Geist({
   variable: "--font-sans",
   subsets: ["latin"],
   display: "swap",
 });
 
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-display",
+const geistMono = Geist_Mono({
+  variable: "--font-mono",
   subsets: ["latin"],
   display: "swap",
 });
@@ -19,15 +19,22 @@ export const metadata: Metadata = {
   description: "AI-first life organizer for tasks, meetings, and school work.",
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  themeColor: "#0a0a0f",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
-        className={`${jakarta.variable} ${spaceGrotesk.variable} antialiased bg-background bg-aurora text-foreground min-h-screen selection:bg-primary selection:text-primary-foreground`}
+        className={`${geist.variable} ${geistMono.variable} antialiased`}
       >
         {children}
       </body>
