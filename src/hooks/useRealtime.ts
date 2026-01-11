@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../lib/queryClient";
 
@@ -17,8 +17,14 @@ export function useRealtime(handlers?: Record<string, EventHandler>) {
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttemptsRef = useRef(0);
+  const [isConnected, setIsConnected] = useState(false);
 
   const connect = useCallback(() => {
+    // Check if we're on the client side and EventSource is available
+    if (typeof window === "undefined" || typeof EventSource === "undefined") {
+      return;
+    }
+
     if (eventSourceRef.current?.readyState === EventSource.OPEN) {
       return;
     }
@@ -29,6 +35,7 @@ export function useRealtime(handlers?: Record<string, EventHandler>) {
 
       eventSource.onopen = () => {
         reconnectAttemptsRef.current = 0;
+        setIsConnected(true);
         console.log("[SSE] Connected");
       };
 
@@ -67,6 +74,7 @@ export function useRealtime(handlers?: Record<string, EventHandler>) {
       eventSource.onerror = () => {
         eventSource.close();
         eventSourceRef.current = null;
+        setIsConnected(false);
 
         // Exponential backoff reconnection
         const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 30000);
@@ -95,6 +103,6 @@ export function useRealtime(handlers?: Record<string, EventHandler>) {
   }, [connect]);
 
   return {
-    isConnected: eventSourceRef.current?.readyState === EventSource.OPEN,
+    isConnected,
   };
 }

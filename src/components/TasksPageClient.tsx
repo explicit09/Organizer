@@ -3,11 +3,13 @@
 import { useState, useMemo } from "react";
 import { ItemTable } from "./ItemTable";
 import { KanbanBoard } from "./KanbanBoard";
+import { SlidePanel } from "./SlidePanel";
 import { FilterPopover, type FilterChip } from "./FilterPopover";
 import { FilterChips } from "./FilterChips";
 import { ViewSwitcher, type ViewType, type SortOption, type GroupOption } from "./ViewSwitcher";
 import type { Item } from "../lib/items";
-import { Clock, Sparkles } from "lucide-react";
+import { Clock, Sparkles, LayoutList, LayoutGrid } from "lucide-react";
+import { clsx } from "clsx";
 
 type TasksPageClientProps = {
   items: Item[];
@@ -25,19 +27,17 @@ export function TasksPageClient({ items, suggestions }: TasksPageClientProps) {
     sort: "manual" as SortOption,
     group: "status" as GroupOption,
   });
+  const [selectedItem, setSelectedItem] = useState<Item | null>(null);
 
   // Filter items based on active filter chips
   const filteredItems = useMemo(() => {
     if (filterChips.length === 0) return items;
 
     return items.filter((item) => {
-      // Group chips by category
       const statusFilters = filterChips.filter((c) => c.category === "status").map((c) => c.value);
       const priorityFilters = filterChips.filter((c) => c.category === "priority").map((c) => c.value);
       const typeFilters = filterChips.filter((c) => c.category === "type").map((c) => c.value);
 
-      // Item must match ALL categories that have filters (AND between categories)
-      // Within a category, item must match ANY of the selected values (OR within category)
       if (statusFilters.length > 0 && !statusFilters.includes(item.status)) return false;
       if (priorityFilters.length > 0 && !priorityFilters.includes(item.priority)) return false;
       if (typeFilters.length > 0 && !typeFilters.includes(item.type)) return false;
@@ -89,9 +89,9 @@ export function TasksPageClient({ items, suggestions }: TasksPageClientProps) {
   }, [items]);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="space-y-6">
       {/* Header with Filters and View Switcher */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
             <FilterPopover
@@ -101,7 +101,7 @@ export function TasksPageClient({ items, suggestions }: TasksPageClientProps) {
               counts={counts}
             />
             <span className="text-sm text-muted-foreground">
-              {filteredItems.length} of {items.length} tasks
+              {filteredItems.length} {filteredItems.length === 1 ? "task" : "tasks"}
             </span>
           </div>
           <ViewSwitcher options={viewOptions} onChange={setViewOptions} persistKey="tasks" />
@@ -113,16 +113,16 @@ export function TasksPageClient({ items, suggestions }: TasksPageClientProps) {
 
       {/* Suggestions */}
       {suggestions.length > 0 && (
-        <section className="rounded-lg border border-border bg-card/50 p-4">
+        <section className="rounded-lg border border-border bg-card p-4">
           <div className="flex items-center gap-2 mb-3">
             <Sparkles size={14} className="text-primary" />
             <h3 className="text-sm font-medium text-foreground">Suggested Schedule</h3>
           </div>
-          <div className="grid gap-1.5">
+          <div className="space-y-1.5">
             {suggestions.map((suggestion) => (
               <div
                 key={suggestion.itemId}
-                className="flex items-center justify-between gap-3 rounded-md border border-border/60 bg-background px-3 py-2 text-sm"
+                className="flex items-center justify-between gap-3 rounded-md border border-border bg-background px-3 py-2 text-sm"
               >
                 <span className="text-foreground truncate">{suggestion.title}</span>
                 <span className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground shrink-0">
@@ -138,13 +138,21 @@ export function TasksPageClient({ items, suggestions }: TasksPageClientProps) {
       {/* Main Content - View Switching */}
       {viewOptions.view === "board" && <KanbanBoard items={sortedItems} />}
       {viewOptions.view === "list" && (
-        <ItemTable title="Tasks" items={sortedItems} emptyLabel="No tasks match your filters." />
+        <ItemTable 
+          title="Tasks" 
+          items={sortedItems} 
+          emptyLabel="No tasks match your filters."
+          onItemClick={setSelectedItem}
+        />
       )}
       {viewOptions.view === "timeline" && (
         <div className="rounded-lg border border-dashed border-border p-12 text-center">
           <p className="text-sm text-muted-foreground">Timeline view coming soon...</p>
         </div>
       )}
+
+      {/* Slide Panel */}
+      <SlidePanel item={selectedItem} onClose={() => setSelectedItem(null)} />
     </div>
   );
 }

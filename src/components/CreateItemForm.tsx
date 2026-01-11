@@ -6,7 +6,7 @@ import type { Item, ItemType } from "../lib/items";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
-import { Loader2, Plus, AlertCircle, FileText, CheckSquare, Calendar, GraduationCap, Zap } from "lucide-react";
+import { Loader2, Plus, AlertCircle, FileText, CheckSquare, Calendar, GraduationCap, Zap, Clock } from "lucide-react";
 import { clsx } from "clsx";
 
 type PreviewItem = {
@@ -14,6 +14,8 @@ type PreviewItem = {
   title: string;
   priority?: string;
   subtasks?: string[];
+  dueAt?: string;
+  estimatedMinutes?: number;
 };
 
 type CreateItemFormProps = {
@@ -146,7 +148,7 @@ export function CreateItemForm({ compact, onCreated }: CreateItemFormProps) {
           <Button
             type="submit"
             disabled={!text || isPreviewing || !!hasPreview}
-            variant="neon"
+            variant="default"
             size="icon"
             className="h-11 w-12 shrink-0 rounded-xl"
           >
@@ -183,13 +185,30 @@ export function CreateItemForm({ compact, onCreated }: CreateItemFormProps) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-white group-hover:text-primary transition-colors">{item.title}</div>
-                  {item.subtasks && item.subtasks.length > 0 && (
-                    <div className="mt-2 flex gap-2">
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {item.dueAt && (
+                      <span className="text-[10px] flex items-center gap-1 text-muted-foreground bg-white/5 px-2 py-0.5 rounded border border-white/5">
+                        <Clock size={10} />
+                        {new Date(item.dueAt).toLocaleDateString(undefined, { 
+                          weekday: 'short', 
+                          month: 'short', 
+                          day: 'numeric',
+                          hour: 'numeric',
+                          minute: '2-digit'
+                        })}
+                      </span>
+                    )}
+                    {item.subtasks && item.subtasks.length > 0 && (
                       <span className="text-[10px] uppercase tracking-wider text-muted-foreground bg-white/5 px-2 py-0.5 rounded border border-white/5">
                         {item.subtasks.length} subtasks
                       </span>
-                    </div>
-                  )}
+                    )}
+                    {item.estimatedMinutes && (
+                      <span className="text-[10px] text-muted-foreground bg-white/5 px-2 py-0.5 rounded border border-white/5">
+                        ~{item.estimatedMinutes}min
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground self-center px-2 py-1 bg-white/5 rounded">
                   {formatType(item.type)}

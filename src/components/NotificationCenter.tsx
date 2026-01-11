@@ -2,8 +2,10 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/Popover";
-import { Bell, Check, Clock, X, CheckCheck, Trash2 } from "lucide-react";
+import { Bell, Check, Clock, X, CheckCheck } from "lucide-react";
 import { clsx } from "clsx";
+import { formatTimeAgo } from "@/lib/dateParser";
+import { SkeletonNotification } from "./ui/Skeleton";
 
 type Notification = {
   id: string;
@@ -14,30 +16,16 @@ type Notification = {
   itemId?: string;
 };
 
-function formatTimeAgo(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMins / 60);
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffMins < 0) {
-    // Future
-    if (diffMins > -60) return `in ${-diffMins}m`;
-    if (diffHours > -24) return `in ${-diffHours}h`;
-    return `in ${-diffDays}d`;
-  }
-  if (diffMins < 1) return "just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  return `${diffDays}d ago`;
-}
-
 export function NotificationCenter() {
+  const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Prevent hydration mismatch with Radix UI
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -97,6 +85,15 @@ export function NotificationCenter() {
 
   const unreadCount = notifications.filter((n) => !n.deliveredAt).length;
 
+  // Prevent hydration mismatch - render placeholder until mounted
+  if (!mounted) {
+    return (
+      <button className="relative p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+        <Bell size={18} />
+      </button>
+    );
+  }
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -127,17 +124,7 @@ export function NotificationCenter() {
         {/* Content */}
         <div className="max-h-80 overflow-y-auto">
           {loading ? (
-            <div className="p-4 space-y-3">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="flex gap-3 animate-pulse">
-                  <div className="h-8 w-8 rounded-full bg-muted" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 w-3/4 rounded bg-muted" />
-                    <div className="h-3 w-1/2 rounded bg-muted" />
-                  </div>
-                </div>
-              ))}
-            </div>
+            <SkeletonNotification />
           ) : notifications.length === 0 ? (
             <div className="py-12 text-center">
               <Bell size={24} className="mx-auto text-muted-foreground/50 mb-2" />
