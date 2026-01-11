@@ -25,18 +25,25 @@ export default async function AppLayout({
   return (
     <ClientProviders>
       <div className="flex min-h-screen bg-background">
+        {/* Sidebar - Desktop only */}
         <Sidebar />
-        <div className="flex flex-1 flex-col m-2 ml-0 md:ml-2">
-          <main className="flex flex-1 flex-col bg-card border border-border rounded-lg min-w-0 overflow-hidden">
-            <Topbar />
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="mx-auto max-w-6xl">
-                <MobileNav />
-                {children}
-              </div>
+        
+        {/* Main Content Area */}
+        <div className="flex flex-1 flex-col min-w-0">
+          {/* Topbar */}
+          <Topbar />
+          
+          {/* Page Content */}
+          <main className="flex-1 overflow-y-auto">
+            <div className="page-container">
+              {/* Mobile Navigation */}
+              <MobileNav />
+              {children}
             </div>
           </main>
         </div>
+        
+        {/* Overlays */}
         <CommandPalette />
         <AIAgent />
         <Toaster />

@@ -5,27 +5,43 @@ import { usePathname, useRouter } from "next/navigation";
 import { CreateItemForm } from "./CreateItemForm";
 import { NotificationCenter } from "./NotificationCenter";
 import type { Item } from "../lib/items";
-import { Search, Plus, X, Menu, Sparkles, Send, ArrowRight } from "lucide-react";
+import { 
+  Search, 
+  Plus, 
+  X, 
+  Menu, 
+  Sparkles, 
+  Send, 
+  ChevronRight,
+  Keyboard,
+  Wand2,
+  Loader2,
+  CheckCircle2,
+  Calendar,
+  Tag,
+  AlertTriangle,
+} from "lucide-react";
 import { clsx } from "clsx";
+import { Button } from "./ui/Button";
 
-const pageTitles: Record<string, string> = {
-  "/dashboard": "Dashboard",
-  "/inbox": "Inbox",
-  "/tasks": "Tasks",
-  "/today": "Today",
-  "/habits": "Habits",
-  "/schedule": "Schedule",
-  "/meetings": "Meetings",
-  "/school": "School",
-  "/courses": "Courses",
-  "/projects": "Projects",
-  "/progress": "Progress",
-  "/notes": "Notes",
-  "/review": "Weekly Review",
-  "/integrations": "Integrations",
+const pageMeta: Record<string, { title: string; parent?: string }> = {
+  "/dashboard": { title: "Dashboard" },
+  "/inbox": { title: "Inbox" },
+  "/tasks": { title: "Tasks" },
+  "/today": { title: "Today" },
+  "/habits": { title: "Habits" },
+  "/schedule": { title: "Schedule" },
+  "/meetings": { title: "Meetings" },
+  "/school": { title: "School" },
+  "/courses": { title: "Courses" },
+  "/projects": { title: "Projects" },
+  "/progress": { title: "Progress" },
+  "/notes": { title: "Notes" },
+  "/review": { title: "Weekly Review" },
+  "/integrations": { title: "Integrations" },
 };
 
-// Quick capture parsing
+// Quick capture parsing (local fallback)
 function parseQuickCapture(input: string): {
   title: string;
   type: "task" | "meeting" | "school";
@@ -84,11 +100,21 @@ function parseQuickCapture(input: string): {
     title = title.replace(/\btoday\b/i, "").trim();
   }
 
-  // Clean up title
   title = title.replace(/\s+/g, " ").trim();
 
   return { title, type, priority, tags, dueAt };
 }
+
+// AI-parsed item type
+type AIParsedItem = {
+  title: string;
+  type: "task" | "meeting" | "school";
+  priority: "low" | "medium" | "high" | "urgent";
+  dueAt?: string;
+  estimatedMinutes?: number;
+  subtasks?: string[];
+  details?: string;
+};
 
 export function Topbar() {
   const pathname = usePathname();
@@ -99,22 +125,69 @@ export function Topbar() {
   const [isSearching, setIsSearching] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
   const [captureMode, setCaptureMode] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [aiMode, setAiMode] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResult, setAiResult] = useState<{ items: AIParsedItem[]; rationale?: string } | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const pageTitle = pageTitles[pathname] || "Organizer";
+  const meta = pageMeta[pathname] || { title: "Organizer" };
 
-  // Detect if input looks like a capture (starts with action verb or has markers)
+  // Detect if input looks like a capture
   const looksLikeCapture = useCallback((input: string) => {
     const capturePatterns = [
       /^(add|create|make|schedule|buy|call|email|send|finish|complete|review|prepare|do|write|read|study|meet|remind)/i,
-      /#\w+/,  // Has tags
-      /!(urgent|high|medium|low)/i,  // Has priority
-      /@(task|meeting|school)/i,  // Has type
+      /#\w+/,
+      /!(urgent|high|medium|low)/i,
+      /@(task|meeting|school)/i,
     ];
     return capturePatterns.some((p) => p.test(input.trim()));
   }, []);
 
-  // Handle quick capture submission
+  // AI-powered parsing
+  const handleAiParse = async () => {
+    if (!query.trim()) return;
+    
+    setAiLoading(true);
+    setAiError(null);
+    setAiResult(null);
+
+    try {
+      const res = await fetch("/api/organize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: query }),
+      });
+
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.error || "AI parsing failed");
+      }
+
+      if (data.items && data.items.length > 0) {
+        setAiResult({ items: data.items, rationale: data.rationale });
+        // Auto-submit if only one item was created
+        if (data.items.length === 1) {
+          setQuery("");
+          setCaptureMode(false);
+          setShowSearch(false);
+          setAiMode(false);
+          setAiResult(null);
+          router.refresh();
+        }
+      } else {
+        setAiError("AI couldn't parse your input. Try being more specific.");
+      }
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : "AI parsing failed");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  // Handle quick capture submission (basic)
   const handleQuickCapture = async () => {
     if (!query.trim()) return;
 
@@ -138,7 +211,7 @@ export function Topbar() {
       if (res.ok) {
         setQuery("");
         setCaptureMode(false);
-        // Show success feedback (could add toast here)
+        setShowSearch(false);
         router.refresh();
       }
     } catch (error) {
@@ -148,20 +221,32 @@ export function Topbar() {
     }
   };
 
-  // Handle key events
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && captureMode) {
       e.preventDefault();
-      handleQuickCapture();
+      if (aiMode) {
+        handleAiParse();
+      } else {
+        handleQuickCapture();
+      }
     }
     if (e.key === "Escape") {
       setCaptureMode(false);
+      setAiMode(false);
+      setAiResult(null);
       setQuery("");
+      setShowSearch(false);
+    }
+    // Tab to toggle AI mode
+    if (e.key === "Tab" && captureMode) {
+      e.preventDefault();
+      setAiMode(!aiMode);
     }
   };
 
   function navigateToItem(item: Item) {
     setQuery("");
+    setShowSearch(false);
     const typeRoutes: Record<string, string> = {
       task: "/tasks",
       meeting: "/meetings",
@@ -193,93 +278,195 @@ export function Topbar() {
     return () => clearTimeout(handle);
   }, [query]);
 
+  // Focus input when search opens
+  useEffect(() => {
+    if (showSearch && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [showSearch]);
+
+  // Reset AI state when closing
+  useEffect(() => {
+    if (!showSearch) {
+      setAiMode(false);
+      setAiResult(null);
+      setAiError(null);
+    }
+  }, [showSearch]);
+
+  const parsed = captureMode && query.trim() ? parseQuickCapture(query) : null;
+
   return (
-    <div className="flex flex-col border-b border-border">
-      {/* Top Row */}
-      <div className="flex items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-3">
-          <button className="md:hidden flex h-8 w-8 items-center justify-center rounded-lg hover:bg-accent text-muted-foreground">
+    <header className="flex flex-col border-b border-border glass-subtle sticky top-0 z-40">
+      {/* Main Bar */}
+      <div className="flex items-center justify-between h-12 px-4">
+        {/* Left: Page Title / Breadcrumbs */}
+        <div className="flex items-center gap-2 min-w-0">
+          {/* Mobile menu button */}
+          <button className="md:hidden flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent text-muted-foreground transition-colors">
             <Menu size={18} />
           </button>
-          <h1 className="text-[15px] font-semibold text-foreground">{pageTitle}</h1>
+          
+          {/* Breadcrumb */}
+          <nav className="flex items-center gap-1.5 text-sm">
+            {meta.parent && (
+              <>
+                <span className="text-muted-foreground">{meta.parent}</span>
+                <ChevronRight size={14} className="text-muted-foreground/50" />
+              </>
+            )}
+            <h1 className="font-semibold text-foreground truncate">{meta.title}</h1>
+          </nav>
         </div>
 
+        {/* Right: Actions */}
         <div className="flex items-center gap-2">
+          {/* Search Toggle (Desktop) */}
           <button
-            onClick={() => setShowQuickAdd((prev) => !prev)}
-            className="flex h-8 items-center gap-1.5 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+            onClick={() => setShowSearch(!showSearch)}
+            className={clsx(
+              "hidden sm:flex h-8 w-8 items-center justify-center rounded-md transition-colors",
+              showSearch 
+                ? "bg-accent text-foreground" 
+                : "text-muted-foreground hover:bg-accent hover:text-foreground"
+            )}
+            title="Search (⌘K)"
           >
-            {showQuickAdd ? <X size={16} /> : <Plus size={16} />}
-            <span className="hidden sm:inline">{showQuickAdd ? "Close" : "Add"}</span>
+            {showSearch ? <X size={16} /> : <Search size={16} />}
           </button>
+
+          {/* Keyboard Shortcuts */}
+          <button
+            className="hidden sm:flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            title="Keyboard shortcuts"
+          >
+            <Keyboard size={16} />
+          </button>
+
+          {/* Notifications */}
+          <NotificationCenter />
+
+          {/* Add Button */}
+          <Button
+            size="sm"
+            onClick={() => setShowQuickAdd(!showQuickAdd)}
+            className="gap-1.5"
+          >
+            {showQuickAdd ? <X size={14} /> : <Plus size={14} />}
+            <span className="hidden sm:inline">{showQuickAdd ? "Close" : "New"}</span>
+          </Button>
         </div>
       </div>
 
-      {/* Filter Row */}
-      <div className="flex items-center justify-between px-4 py-2 border-t border-border/40">
-        <div className="flex items-center gap-2">
-          {/* Search / Quick Capture */}
-          <div className="relative">
-            <div className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground">
-              {captureMode ? <Sparkles size={14} className="text-primary" /> : <Search size={14} />}
+      {/* Inline Search Bar */}
+      {showSearch && (
+        <div className="px-4 pb-3 animate-in slide-in-from-top duration-150">
+          <div className="relative max-w-xl mx-auto">
+            {/* Mode indicator */}
+            <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+              {aiMode ? (
+                <Wand2 size={14} className="text-[hsl(280_60%_55%)]" />
+              ) : captureMode ? (
+                <Sparkles size={14} className="text-primary" />
+              ) : (
+                <Search size={14} />
+              )}
             </div>
+            
             <input
               ref={inputRef}
               className={clsx(
-                "h-8 rounded-lg border bg-background pl-8 pr-10 text-sm text-foreground placeholder-muted-foreground outline-none transition-all",
-                captureMode
-                  ? "w-80 border-primary/50 ring-2 ring-primary/20"
-                  : "w-48 border-border hover:border-border focus:border-ring focus:ring-1 focus:ring-ring"
+                "h-10 w-full rounded-lg text-sm",
+                "bg-card text-foreground",
+                "border pl-10 pr-24",
+                "placeholder:text-muted-foreground",
+                "focus:outline-none transition-all duration-200",
+                aiMode
+                  ? "border-[hsl(280_60%_55%/0.5)] ring-2 ring-[hsl(280_60%_55%/0.2)]"
+                  : captureMode
+                    ? "border-primary/50 ring-2 ring-primary/20"
+                    : "border-border focus:border-ring focus:ring-2 focus:ring-ring/20"
               )}
-              placeholder={captureMode ? "Add task tomorrow #work !high" : "Search or type to add..."}
+              placeholder={
+                aiMode 
+                  ? "Describe tasks naturally... \"Meeting with John tomorrow at 2pm\"" 
+                  : captureMode 
+                    ? "Create task #work !high tomorrow" 
+                    : "Search or type to create..."
+              }
               type="text"
               value={query}
-              onChange={(event) => {
-                setQuery(event.target.value);
-                // Auto-detect capture mode
-                if (looksLikeCapture(event.target.value) && !captureMode) {
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setAiResult(null);
+                setAiError(null);
+                if (looksLikeCapture(e.target.value) && !captureMode) {
                   setCaptureMode(true);
                 }
               }}
               onKeyDown={handleKeyDown}
-              onFocus={() => {
-                if (looksLikeCapture(query)) {
-                  setCaptureMode(true);
-                }
-              }}
             />
 
-            {/* Capture Submit Button */}
-            {captureMode && query.trim() && (
-              <button
-                onClick={handleQuickCapture}
-                disabled={isCapturing}
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-6 rounded-md bg-primary text-white hover:bg-primary/90 transition-all disabled:opacity-50"
-              >
-                {isCapturing ? (
-                  <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <Send size={12} />
-                )}
-              </button>
-            )}
+            {/* Right side buttons */}
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+              {/* AI Toggle */}
+              {captureMode && (
+                <button
+                  onClick={() => setAiMode(!aiMode)}
+                  className={clsx(
+                    "flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all",
+                    aiMode 
+                      ? "bg-[hsl(280_60%_55%/0.15)] text-[hsl(280_60%_55%)] border border-[hsl(280_60%_55%/0.3)]" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                  )}
+                  title="Toggle AI mode (Tab)"
+                >
+                  <Wand2 size={10} />
+                  AI
+                </button>
+              )}
+              
+              {/* Submit Button */}
+              {captureMode && query.trim() && (
+                <button
+                  onClick={aiMode ? handleAiParse : handleQuickCapture}
+                  disabled={isCapturing || aiLoading}
+                  className={clsx(
+                    "flex items-center justify-center w-7 h-7 rounded-md transition-all",
+                    aiMode 
+                      ? "bg-gradient-to-r from-[hsl(280_60%_55%)] to-primary text-white"
+                      : "bg-primary text-white hover:bg-primary/90",
+                    "disabled:opacity-50"
+                  )}
+                >
+                  {isCapturing || aiLoading ? (
+                    <Loader2 size={12} className="animate-spin" />
+                  ) : (
+                    <Send size={12} />
+                  )}
+                </button>
+              )}
+            </div>
 
-            {/* Search Results Dropdown */}
+            {/* Search Results */}
             {query.trim().length >= 2 && !captureMode && (
-              <div className="absolute left-0 right-0 top-[calc(100%+4px)] z-50 w-72 rounded-lg border border-border bg-card shadow-lg overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="absolute left-0 right-0 top-full mt-2 z-50 rounded-xl border border-border glass-card shadow-xl overflow-hidden animate-in fade-in slide-in-from-top duration-150">
                 {isSearching ? (
-                  <div className="p-3 text-center text-xs text-muted-foreground">Searching...</div>
+                  <div className="p-4 text-center text-xs text-muted-foreground">
+                    <Loader2 size={16} className="animate-spin mx-auto mb-2" />
+                    Searching...
+                  </div>
                 ) : results.length === 0 ? (
-                  <div className="p-3 text-center text-xs text-muted-foreground">No results found</div>
+                  <div className="p-4 text-center text-xs text-muted-foreground">No results found</div>
                 ) : (
                   <div className="max-h-64 overflow-y-auto">
                     {results.map((item) => (
                       <button
                         key={item.id}
-                        className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left hover:bg-accent transition-colors"
+                        className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left hover:bg-accent/50 transition-colors"
                         onClick={() => navigateToItem(item)}
                       >
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <div className="text-sm font-medium text-foreground truncate">{item.title}</div>
                           <div className="text-[10px] text-muted-foreground capitalize">
                             {item.type} · {item.status.replace("_", " ")}
@@ -295,74 +482,121 @@ export function Topbar() {
               </div>
             )}
 
-            {/* Capture Mode Preview */}
-            {captureMode && query.trim() && (
-              <div className="absolute left-0 top-[calc(100%+4px)] z-50 w-80 rounded-lg border border-primary/20 bg-card shadow-lg overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                {(() => {
-                  const parsed = parseQuickCapture(query);
-                  return (
-                    <div className="p-3 space-y-2">
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Sparkles size={12} className="text-primary" />
-                        Creating {parsed.type}:
-                      </div>
-                      <div className="text-sm font-medium text-white">{parsed.title || "(no title)"}</div>
-                      <div className="flex flex-wrap gap-1.5">
-                        <span className={clsx(
-                          "text-[10px] px-1.5 py-0.5 rounded",
-                          parsed.type === "task" && "bg-purple-500/20 text-purple-400",
-                          parsed.type === "meeting" && "bg-blue-500/20 text-blue-400",
-                          parsed.type === "school" && "bg-amber-500/20 text-amber-400"
-                        )}>
-                          {parsed.type}
+            {/* AI Result Preview */}
+            {aiMode && aiResult && (
+              <div className="absolute left-0 right-0 top-full mt-2 z-50 rounded-xl border border-[hsl(280_60%_55%/0.3)] glass-card shadow-xl overflow-hidden animate-in fade-in slide-in-from-top duration-150">
+                <div className="p-4 space-y-3">
+                  <div className="flex items-center gap-2 text-xs">
+                    <CheckCircle2 size={14} className="text-[hsl(142_65%_48%)]" />
+                    <span className="text-[hsl(142_65%_48%)] font-medium">
+                      Created {aiResult.items.length} item{aiResult.items.length !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+                  
+                  {aiResult.items.map((item, i) => (
+                    <div key={i} className="p-2 rounded-lg bg-accent/30 border border-border/50">
+                      <div className="text-sm font-medium text-foreground">{item.title}</div>
+                      <div className="flex flex-wrap gap-1.5 mt-1.5">
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/15 text-primary font-medium">
+                          {item.type}
                         </span>
-                        <span className={clsx(
-                          "text-[10px] px-1.5 py-0.5 rounded",
-                          parsed.priority === "urgent" && "bg-rose-500/20 text-rose-400",
-                          parsed.priority === "high" && "bg-amber-500/20 text-amber-400",
-                          parsed.priority === "medium" && "bg-blue-500/20 text-blue-400",
-                          parsed.priority === "low" && "bg-slate-500/20 text-slate-400"
-                        )}>
-                          {parsed.priority}
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-medium">
+                          {item.priority}
                         </span>
-                        {parsed.tags.map((tag) => (
-                          <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded bg-primary/20 text-primary">
-                            #{tag}
-                          </span>
-                        ))}
-                        {parsed.dueAt && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400">
-                            {new Date(parsed.dueAt).toLocaleDateString()}
+                        {item.dueAt && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-[hsl(142_65%_48%/0.15)] text-[hsl(142_65%_48%)] font-medium flex items-center gap-1">
+                            <Calendar size={8} />
+                            {new Date(item.dueAt).toLocaleDateString()}
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground pt-1 border-t border-white/[0.04]">
-                        <kbd className="px-1 rounded bg-white/[0.06]">Enter</kbd> to create
-                        <span className="mx-1">·</span>
-                        <kbd className="px-1 rounded bg-white/[0.06]">Esc</kbd> to cancel
-                      </div>
                     </div>
-                  );
-                })()}
+                  ))}
+                  
+                  {aiResult.rationale && (
+                    <p className="text-[10px] text-muted-foreground pt-2 border-t border-border">
+                      {aiResult.rationale}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* AI Error */}
+            {aiMode && aiError && (
+              <div className="absolute left-0 right-0 top-full mt-2 z-50 rounded-xl border border-destructive/30 bg-destructive/10 shadow-xl overflow-hidden animate-in fade-in slide-in-from-top duration-150">
+                <div className="p-4 flex items-start gap-3">
+                  <AlertTriangle size={16} className="text-destructive shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm text-destructive font-medium">AI parsing failed</p>
+                    <p className="text-xs text-destructive/80 mt-1">{aiError}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Capture Preview (non-AI) */}
+            {captureMode && !aiMode && parsed && query.trim() && (
+              <div className="absolute left-0 right-0 top-full mt-2 z-50 rounded-xl border border-primary/20 glass-card shadow-xl overflow-hidden animate-in fade-in slide-in-from-top duration-150">
+                <div className="p-4 space-y-3">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Sparkles size={12} className="text-primary" />
+                    Creating {parsed.type}
+                  </div>
+                  <div className="text-sm font-medium text-foreground">{parsed.title || "(no title)"}</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    <span className={clsx(
+                      "text-[10px] px-2 py-0.5 rounded-md font-medium border",
+                      parsed.type === "task" && "bg-primary/15 text-primary border-primary/20",
+                      parsed.type === "meeting" && "bg-[hsl(200_80%_55%/0.15)] text-[hsl(200_80%_55%)] border-[hsl(200_80%_55%/0.2)]",
+                      parsed.type === "school" && "bg-[hsl(45_95%_55%/0.15)] text-[hsl(45_95%_55%)] border-[hsl(45_95%_55%/0.2)]"
+                    )}>
+                      {parsed.type}
+                    </span>
+                    <span className={clsx(
+                      "text-[10px] px-2 py-0.5 rounded-md font-medium border",
+                      parsed.priority === "urgent" && "bg-destructive/15 text-destructive border-destructive/20",
+                      parsed.priority === "high" && "bg-[hsl(25_95%_55%/0.15)] text-[hsl(25_95%_55%)] border-[hsl(25_95%_55%/0.2)]",
+                      parsed.priority === "medium" && "bg-primary/15 text-primary border-primary/20",
+                      parsed.priority === "low" && "bg-muted text-muted-foreground border-border"
+                    )}>
+                      {parsed.priority}
+                    </span>
+                    {parsed.tags.map((tag) => (
+                      <span key={tag} className="text-[10px] px-2 py-0.5 rounded-md bg-primary/15 text-primary font-medium flex items-center gap-1 border border-primary/20">
+                        <Tag size={8} />
+                        {tag}
+                      </span>
+                    ))}
+                    {parsed.dueAt && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-md bg-[hsl(142_65%_48%/0.15)] text-[hsl(142_65%_48%)] font-medium flex items-center gap-1 border border-[hsl(142_65%_48%/0.2)]">
+                        <Calendar size={8} />
+                        {new Date(parsed.dueAt).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground pt-2 border-t border-border">
+                    <kbd className="kbd">Enter</kbd> create
+                    <span className="text-muted-foreground/50">·</span>
+                    <kbd className="kbd">Tab</kbd> toggle AI
+                    <span className="text-muted-foreground/50">·</span>
+                    <kbd className="kbd">Esc</kbd> cancel
+                  </div>
+                </div>
               </div>
             )}
           </div>
-
         </div>
-
-        {/* Notifications */}
-        <NotificationCenter />
-      </div>
+      )}
 
       {/* Quick Add Panel */}
       {showQuickAdd && (
-        <div className="border-t border-border p-4 bg-card">
-          <CreateItemForm
-            compact
-            onCreated={() => setShowQuickAdd(false)}
-          />
+        <div className="border-t border-border p-4 glass-card animate-in slide-in-from-top duration-150">
+          <div className="max-w-xl mx-auto">
+            <CreateItemForm compact onCreated={() => setShowQuickAdd(false)} />
+          </div>
         </div>
       )}
-    </div>
+    </header>
   );
 }

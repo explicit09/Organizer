@@ -1,34 +1,26 @@
-
 import { cookies } from "next/headers";
-import { ItemTable } from "../../../components/ItemTable";
-import { StatCard } from "../../../components/StatCard";
-import { TrendsCard } from "../../../components/TrendsCard";
-import { SuggestionsCard } from "../../../components/SuggestionsCard";
-import { TimeAllocationChart } from "../../../components/TimeAllocationChart";
-import { DuplicateWarnings } from "../../../components/DuplicateWarnings";
+import Link from "next/link";
+import { StatCard, FocusCard } from "@/components/StatCard";
 import { getSessionUserId } from "../../../lib/auth";
 import { listItems } from "../../../lib/items";
 import { listDueNotifications } from "../../../lib/notifications";
 import { ensureSampleData } from "../../../lib/seed";
-import { CheckCircle2, ListTodo, Calendar, GraduationCap, AlertCircle, Bell, Sparkles, Clock, ArrowRight } from "lucide-react";
-
-function formatPercent(value: number) {
-  return `${Math.round(value)}%`;
-}
-
-function SectionHeader({ icon: Icon, title, action }: { icon: React.ElementType; title: string; action?: React.ReactNode }) {
-  return (
-    <div className="flex items-center justify-between mb-4">
-      <div className="flex items-center gap-2.5">
-        <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-white/[0.04] border border-white/[0.06]">
-          <Icon size={14} className="text-muted-foreground" />
-        </div>
-        <h2 className="text-sm font-semibold text-white">{title}</h2>
-      </div>
-      {action}
-    </div>
-  );
-}
+import { DashboardClient } from "../../../components/DashboardClient";
+import { DonutChart, BarChart, Legend } from "../../../components/ui/Charts";
+import { formatRelativeDate, formatTime } from "../../../lib/dateParser";
+import {
+  Clock,
+  ArrowRight,
+  Calendar,
+  AlertCircle,
+  Inbox,
+  Target,
+  TrendingUp,
+  Sparkles,
+  Zap,
+  BarChart3,
+} from "lucide-react";
+import { clsx } from "clsx";
 
 export default async function DashboardPage() {
   const cookieStore = await cookies();
@@ -42,172 +34,303 @@ export default async function DashboardPage() {
   ensureSampleData(userId);
   const items = listItems(undefined, { userId });
   const notifications = listDueNotifications({ userId });
+  
+  // Calculate stats
   const total = items.length;
   const completed = items.filter((item) => item.status === "completed").length;
-  const tasks = items.filter((item) => item.type === "task").length;
+  const inProgress = items.filter((item) => item.status === "in_progress").length;
+  const notStarted = items.filter((item) => item.status === "not_started").length;
+  const tasks = items.filter((item) => item.type === "task" && item.status !== "completed").length;
   const meetings = items.filter((item) => item.type === "meeting").length;
   const school = items.filter((item) => item.type === "school").length;
   const overdue = items.filter(
     (item) => item.dueAt && new Date(item.dueAt) < new Date() && item.status !== "completed"
   ).length;
 
-  const completionRate = total ? (completed / total) * 100 : 0;
+  const completionRate = total ? Math.round((completed / total) * 100) : 0;
 
+  // Get upcoming items (next 5)
   const upcoming = items
     .filter((item) => item.dueAt && item.status !== "completed")
     .sort((a, b) => (a.dueAt ?? "").localeCompare(b.dueAt ?? ""))
     .slice(0, 5);
 
-  const today = new Date();
-  const greeting = today.getHours() < 12 ? "Good morning" : today.getHours() < 18 ? "Good afternoon" : "Good evening";
+  // Get today's items
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date();
+  todayEnd.setHours(23, 59, 59, 999);
+  
+  const todayItems = items.filter((item) => {
+    if (!item.dueAt || item.status === "completed") return false;
+    const due = new Date(item.dueAt);
+    return due >= todayStart && due <= todayEnd;
+  });
+
+  // Calculate weekly data
+  const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const weeklyData = weekDays.map((day) => ({
+    label: day,
+    value: Math.floor(Math.random() * 8) + 1, // Placeholder - would be real data
+    color: 'hsl(238 65% 62%)',
+  }));
+
+  // Status distribution for donut chart
+  const statusSegments = [
+    { value: completed, color: 'hsl(142 65% 48%)', label: 'Completed' },
+    { value: inProgress, color: 'hsl(45 95% 55%)', label: 'In Progress' },
+    { value: notStarted, color: 'hsl(228 5% 50%)', label: 'Not Started' },
+  ].filter(s => s.value > 0);
+
+  // Type distribution
+  const typeData = [
+    { label: 'Tasks', value: tasks, color: 'hsl(238 65% 62%)' },
+    { label: 'Meetings', value: meetings, color: 'hsl(200 80% 55%)' },
+    { label: 'School', value: school, color: 'hsl(45 95% 55%)' },
+  ];
+
+  // Greeting based on time
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
   return (
-    <div className="flex flex-col gap-8 p-6 md:p-8">
+    <div className="space-y-8 max-w-6xl mx-auto">
       {/* Header */}
       <div className="flex items-end justify-between gap-4">
         <div>
-          <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">{greeting}</p>
-          <h1 className="font-display text-3xl md:text-4xl font-bold text-white tracking-tight">Dashboard</h1>
+          <p className="text-xs text-muted-foreground mb-0.5">{greeting}</p>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">Dashboard</h1>
         </div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Clock size={12} />
-          <span>{today.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}</span>
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg glass-subtle">
+          <Clock size={14} className="text-muted-foreground" />
+          <span className="text-xs text-muted-foreground">
+            {new Date().toLocaleDateString("en-US", {
+              weekday: "long",
+              month: "short",
+              day: "numeric"
+            })}
+          </span>
         </div>
       </div>
 
-      {/* Stats Row */}
-      <section className="grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
-        <StatCard
-          label="Completed"
-          value={String(completed)}
-          delta={formatPercent(completionRate)}
-          trend="up"
-          helper="Completion rate"
-          icon={<CheckCircle2 className="text-emerald-400" size={20} />}
-          compact
+      {/* Daily Briefing & AI Insights */}
+      <DashboardClient />
+
+      {/* Focus Cards - Top row with key actionable metrics */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <FocusCard
+          label="Due Today"
+          value={todayItems.length}
+          description={todayItems.length === 0 ? "All clear" : `${todayItems.length} item${todayItems.length !== 1 ? "s" : ""} to complete`}
+          icon={<Target size={20} />}
+          variant={todayItems.length > 0 ? "primary" : "default"}
         />
-        <StatCard
-          label="Tasks"
-          value={String(tasks)}
-          helper="Active"
-          icon={<ListTodo className="text-purple-400" size={20} />}
-          compact
+        <FocusCard
+          label="In Progress"
+          value={inProgress}
+          description={`${notStarted} not started`}
+          icon={<TrendingUp size={20} />}
+          variant={inProgress > 0 ? "warning" : "default"}
         />
-        <StatCard
-          label="Meetings"
-          value={String(meetings)}
-          helper="Scheduled"
-          icon={<Calendar className="text-blue-400" size={20} />}
-          compact
-        />
-        <StatCard
-          label="School"
-          value={String(school)}
-          helper="Assignments"
-          icon={<GraduationCap className="text-amber-400" size={20} />}
-          compact
-        />
-        <StatCard
+        <FocusCard
           label="Overdue"
-          value={String(overdue)}
-          helper={overdue > 0 ? "Action needed" : "All clear"}
-          trend={overdue > 0 ? "down" : "neutral"}
-          icon={<AlertCircle className={overdue > 0 ? "text-rose-400" : "text-slate-400"} size={20} />}
-          compact
+          value={overdue}
+          description={overdue > 0 ? "Needs attention" : "All on track"}
+          icon={<AlertCircle size={20} />}
+          variant={overdue > 0 ? "danger" : "default"}
         />
-      </section>
+      </div>
 
-      {/* Duplicate Warnings */}
-      <DuplicateWarnings />
-
-      {/* Main Content Grid */}
-      <section className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
-        {/* Left Column */}
-        <div className="space-y-6">
-          {/* Next Up */}
-          <div>
-            <SectionHeader
-              icon={ArrowRight}
-              title="Next Up"
-              action={
-                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
-                  {upcoming.length} items
-                </span>
-              }
-            />
-            <ItemTable
-              items={upcoming}
-              emptyLabel="No scheduled items yet"
-              showHeader={false}
-            />
-          </div>
-
-          {/* Suggestions */}
-          <div>
-            <SectionHeader icon={Sparkles} title="AI Suggestions" />
-            <div className="rounded-xl border border-white/[0.06] bg-[#09090b] p-4">
-              <SuggestionsCard />
+      {/* Main Grid - Balanced layout */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Left Column - Upcoming */}
+        <div className="lg:col-span-2 space-y-6">
+          <section>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Calendar size={14} className="text-primary" />
+                Upcoming
+              </h2>
+              <Link 
+                href="/schedule" 
+                className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
+              >
+                View all <ArrowRight size={12} />
+              </Link>
             </div>
-          </div>
-        </div>
-
-        {/* Right Column */}
-        <div className="space-y-6">
-          {/* Time Allocation - inline, no extra wrapper */}
-          <div>
-            <SectionHeader icon={Clock} title="Time Allocation" />
-            <TimeAllocationChart />
-          </div>
-
-          {/* Trends */}
-          <div>
-            <SectionHeader icon={Sparkles} title="Weekly Trends" />
-            <TrendsCard />
-          </div>
-        </div>
-      </section>
-
-      {/* Notifications */}
-      <section>
-        <SectionHeader
-          icon={Bell}
-          title="Notifications"
-          action={
-            notifications.length > 0 && (
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
-                {notifications.length} pending
-              </span>
-            )
-          }
-        />
-        <div className="rounded-xl border border-white/[0.06] bg-[#09090b] overflow-hidden">
-          {notifications.length === 0 ? (
-            <div className="flex items-center justify-center gap-2 py-8 text-xs text-muted-foreground">
-              <Bell size={14} className="opacity-50" />
-              <span>No upcoming reminders</span>
-            </div>
-          ) : (
-            <div className="divide-y divide-white/[0.04]">
-              {notifications.map((note) => (
-                <div
-                  key={note.id}
-                  className="flex items-center justify-between gap-4 px-4 py-3 hover:bg-white/[0.02] transition-colors"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-2 h-2 rounded-full bg-primary/50" />
-                    <span className="text-sm text-white truncate">{note.title}</span>
-                  </div>
-                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground shrink-0">
-                    {new Date(note.dueAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                    {" "}
-                    {new Date(note.dueAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
-                  </span>
+            
+            <div className="rounded-xl border border-border overflow-hidden glass-card">
+              {upcoming.length === 0 ? (
+                <div className="flex items-center justify-center gap-2 py-12 text-sm text-muted-foreground">
+                  <Calendar size={20} className="opacity-50" />
+                  No upcoming items
                 </div>
-              ))}
+              ) : (
+                <div className="divide-y divide-border/50">
+                  {upcoming.map((item, index) => {
+                    const due = item.dueAt ? new Date(item.dueAt) : null;
+                    const isOverdue = due && due < new Date();
+                    
+                    return (
+                      <Link
+                        key={item.id}
+                        href={`/tasks?highlight=${item.id}`}
+                        className={clsx(
+                          "flex items-center gap-3 px-4 py-3.5 hover:bg-accent/30 transition-all group",
+                          index === 0 && "bg-gradient-to-r from-primary/5 to-transparent"
+                        )}
+                      >
+                        {/* Priority indicator */}
+                        <div className={clsx(
+                          "w-1 h-8 rounded-full shrink-0",
+                          item.priority === "urgent" && "bg-destructive",
+                          item.priority === "high" && "bg-[hsl(25_95%_55%)]",
+                          item.priority === "medium" && "bg-primary",
+                          item.priority === "low" && "bg-muted-foreground/50",
+                        )} />
+                        
+                        {/* Status dot */}
+                        <span className={clsx(
+                          "w-2 h-2 rounded-full shrink-0",
+                          item.status === "in_progress" && "bg-[hsl(45_95%_55%)]",
+                          item.status === "not_started" && "bg-muted-foreground",
+                          item.status === "blocked" && "bg-[hsl(25_95%_55%)]",
+                        )} />
+                        
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
+                            {item.title}
+                          </p>
+                          <p className="text-xs text-muted-foreground capitalize">
+                            {item.type} · {item.status.replace("_", " ")}
+                          </p>
+                        </div>
+                        
+                        {/* Due date */}
+                        {due && (
+                          <span className={clsx(
+                            "text-xs px-2 py-1 rounded-md shrink-0",
+                            isOverdue 
+                              ? "text-destructive bg-destructive/10" 
+                              : "text-muted-foreground bg-muted/50"
+                          )}>
+                            {formatRelativeDate(due)}
+                          </span>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
             </div>
+          </section>
+
+          {/* Notifications */}
+          {notifications.length > 0 && (
+            <section>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Inbox size={14} className="text-primary" />
+                  Reminders
+                </h2>
+                <span className="text-[10px] px-2 py-0.5 rounded-full gradient-primary-subtle text-primary font-medium">
+                  {notifications.length}
+                </span>
+              </div>
+              
+              <div className="rounded-xl border border-border overflow-hidden glass-card">
+                <div className="divide-y divide-border/50">
+                  {notifications.slice(0, 4).map((note) => (
+                    <div
+                      key={note.id}
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-accent/30 transition-colors"
+                    >
+                      <div className="w-2 h-2 rounded-full bg-primary shrink-0 glow-primary" />
+                      <span className="text-sm text-foreground flex-1 truncate">
+                        {note.title}
+                      </span>
+                      <span className="text-xs text-muted-foreground shrink-0">
+                        {formatTime(new Date(note.dueAt))}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
           )}
         </div>
-      </section>
+
+        {/* Right Column - Stats & Charts */}
+        <div className="space-y-4">
+          {/* Status Distribution */}
+          <div className="rounded-xl border border-border p-4 glass-card">
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+              <BarChart3 size={12} />
+              Status Overview
+            </h3>
+            <div className="flex items-center justify-center mb-4">
+              <DonutChart
+                data={statusSegments}
+                size={100}
+                strokeWidth={10}
+                centerValue={total}
+                centerLabel="Total"
+              />
+            </div>
+            <Legend items={statusSegments} className="justify-center" />
+          </div>
+
+          {/* Weekly Activity */}
+          <div className="rounded-xl border border-border p-4 glass-card">
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+              <Zap size={12} />
+              Weekly Activity
+            </h3>
+            <BarChart data={weeklyData} height={64} showValues={false} />
+          </div>
+
+          {/* Quick Stats */}
+          <div className="space-y-3">
+            <StatCard
+              label="This Week"
+              value={items.filter(i => {
+                if (!i.createdAt) return false;
+                const week = new Date();
+                week.setDate(week.getDate() - 7);
+                return new Date(i.createdAt) > week;
+              }).length}
+              helper="Items created"
+              icon={<Calendar size={16} />}
+              variant="info"
+              compact
+            />
+          </div>
+
+          {/* Quick Actions */}
+          <div className="pt-4 border-t border-border">
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+              Quick Actions
+            </h3>
+            <div className="space-y-2">
+              <Link
+                href="/inbox?new=task"
+                className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg text-sm font-medium btn-neon"
+              >
+                <Sparkles size={14} />
+                Add Task
+              </Link>
+              <Link
+                href="/today"
+                className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg text-sm font-medium border border-border glass-card hover:bg-accent/50 transition-colors"
+              >
+                <Target size={14} />
+                Plan Today
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
