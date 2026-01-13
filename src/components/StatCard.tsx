@@ -69,10 +69,10 @@ export function StatCard({
         </div>
 
         {/* Value + Sparkline row */}
-        <div className="flex items-end justify-between gap-3">
+        <div className="flex items-end justify-between gap-2 sm:gap-3">
           <div className={clsx(
             "font-bold text-foreground tabular-nums",
-            compact ? "text-xl" : "text-2xl"
+            compact ? "text-lg sm:text-xl" : "text-xl sm:text-2xl"
           )}>
             {value}
           </div>
@@ -215,7 +215,7 @@ export function FocusCard({
             {label}
           </p>
           <p className={clsx(
-            "text-3xl font-bold tabular-nums",
+            "text-2xl sm:text-3xl font-bold tabular-nums",
             variant === "default" ? "text-foreground" : iconColors[variant]
           )}>
             {value}

@@ -136,7 +136,7 @@ export function CreateItemForm({ compact, onCreated }: CreateItemFormProps) {
           <Zap size={14} className="text-primary" />
           Quick Add
         </Label>
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
           <Input
             className="flex-1 shadow-inner bg-black/20"
             placeholder="e.g. 'Meeting with team at 2pm tomorrow'"
@@ -149,10 +149,10 @@ export function CreateItemForm({ compact, onCreated }: CreateItemFormProps) {
             type="submit"
             disabled={!text || isPreviewing || !!hasPreview}
             variant="default"
-            size="icon"
-            className="h-11 w-12 shrink-0 rounded-xl"
+            className="h-11 sm:w-12 shrink-0 rounded-xl gap-2"
           >
             {isPreviewing ? <Loader2 className="animate-spin" size={18} /> : <Plus size={20} />}
+            <span className="sm:hidden">Preview</span>
           </Button>
         </div>
       </div>
@@ -174,14 +174,19 @@ export function CreateItemForm({ compact, onCreated }: CreateItemFormProps) {
             </Button>
           </div>
 
-          <div className="grid gap-3">
+          <div className="grid gap-2 sm:gap-3">
             {preview?.map((item, index) => (
               <div
                 key={`${item.title}-${index}`}
-                className="group flex items-start gap-4 rounded-xl border border-white/5 bg-white/[0.02] p-4 text-sm transition-all hover:bg-white/[0.05] hover:border-white/10 hover:scale-[1.01]"
+                className="group flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4 rounded-xl border border-white/5 bg-white/[0.02] p-3 sm:p-4 text-sm transition-all hover:bg-white/[0.05] hover:border-white/10 hover:scale-[1.01]"
               >
-                <div className={clsx("p-2 rounded-lg shrink-0", getTypeColor(item.type))}>
-                  <TypeIcon type={item.type} />
+                <div className="flex items-center gap-3 sm:contents">
+                  <div className={clsx("p-2 rounded-lg shrink-0", getTypeColor(item.type))}>
+                    <TypeIcon type={item.type} />
+                  </div>
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 py-1 bg-white/5 rounded sm:hidden">
+                    {formatType(item.type)}
+                  </div>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-white group-hover:text-primary transition-colors">{item.title}</div>
@@ -189,9 +194,9 @@ export function CreateItemForm({ compact, onCreated }: CreateItemFormProps) {
                     {item.dueAt && (
                       <span className="text-[10px] flex items-center gap-1 text-muted-foreground bg-white/5 px-2 py-0.5 rounded border border-white/5">
                         <Clock size={10} />
-                        {new Date(item.dueAt).toLocaleDateString(undefined, { 
-                          weekday: 'short', 
-                          month: 'short', 
+                        {new Date(item.dueAt).toLocaleDateString(undefined, {
+                          weekday: 'short',
+                          month: 'short',
                           day: 'numeric',
                           hour: 'numeric',
                           minute: '2-digit'
@@ -210,7 +215,7 @@ export function CreateItemForm({ compact, onCreated }: CreateItemFormProps) {
                     )}
                   </div>
                 </div>
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground self-center px-2 py-1 bg-white/5 rounded">
+                <div className="hidden sm:block text-[10px] uppercase tracking-wider text-muted-foreground self-center px-2 py-1 bg-white/5 rounded">
                   {formatType(item.type)}
                 </div>
               </div>
