@@ -360,8 +360,8 @@ export function Topbar() {
 
       {/* Inline Search Bar */}
       {showSearch && (
-        <div className="px-4 pb-3 animate-in slide-in-from-top duration-150">
-          <div className="relative max-w-xl mx-auto">
+        <div className="px-3 sm:px-4 pb-3 animate-in slide-in-from-top duration-150">
+          <div className="relative w-full sm:max-w-xl sm:mx-auto">
             {/* Mode indicator */}
             <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
               {aiMode ? (
@@ -591,8 +591,8 @@ export function Topbar() {
 
       {/* Quick Add Panel */}
       {showQuickAdd && (
-        <div className="border-t border-border p-4 glass-card animate-in slide-in-from-top duration-150">
-          <div className="max-w-xl mx-auto">
+        <div className="border-t border-border p-3 sm:p-4 glass-card animate-in slide-in-from-top duration-150">
+          <div className="w-full sm:max-w-xl sm:mx-auto">
             <CreateItemForm compact onCreated={() => setShowQuickAdd(false)} />
           </div>
         </div>

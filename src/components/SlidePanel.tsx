@@ -131,9 +131,9 @@ export function SlidePanel({ item, onClose }: SlidePanelProps) {
       />
 
       {/* Panel */}
-      <div 
+      <div
         className={clsx(
-          "fixed right-0 top-0 bottom-0 w-full max-w-md z-50",
+          "fixed right-0 top-0 bottom-0 w-full sm:max-w-md z-50",
           "flex flex-col transition-transform duration-300 ease-out",
           "bg-gradient-to-b from-card to-background border-l border-border/50",
           isVisible ? "translate-x-0" : "translate-x-full"
@@ -146,7 +146,7 @@ export function SlidePanel({ item, onClose }: SlidePanelProps) {
         </div>
 
         {/* Header */}
-        <div className="relative flex items-center justify-between px-4 py-4 border-b border-border/50 glass-subtle">
+        <div className="relative flex items-center justify-between px-3 sm:px-4 py-3 sm:py-4 border-b border-border/50 glass-subtle">
           <div className="flex items-center gap-3">
             <div className={clsx(
               "flex h-8 w-8 items-center justify-center rounded-lg",
@@ -169,7 +169,7 @@ export function SlidePanel({ item, onClose }: SlidePanelProps) {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4 sm:space-y-6">
           {/* Title */}
           <div>
             {isEditing ? (
