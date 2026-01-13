@@ -17,15 +17,15 @@ export default async function ProjectsPage() {
   const projects = listProjects({ userId });
 
   return (
-    <div className="flex flex-col gap-6">
-      <section className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5">
+    <div className="flex flex-col gap-4 sm:gap-6">
+      <section className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-4 sm:p-5">
         <h2 className="text-sm font-semibold text-white">Projects</h2>
-        <p className="mt-1.5 text-xs text-muted-foreground">
+        <p className="mt-1 sm:mt-1.5 text-xs text-muted-foreground">
           Track initiative goals, focus areas, and long-term progress.
         </p>
       </section>
       <CreateProjectForm />
-      <section className="grid gap-4 md:grid-cols-2">
+      <section className="grid gap-3 sm:gap-4 md:grid-cols-2">
         {projects.length === 0 ? (
           <div className="rounded-xl border border-dashed border-white/[0.08] bg-white/[0.02] px-4 py-8 text-center text-xs text-muted-foreground md:col-span-2">
             No projects yet.
@@ -34,7 +34,7 @@ export default async function ProjectsPage() {
           projects.map((project) => (
             <div
               key={project.id}
-              className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5 hover:border-white/[0.1] transition-colors"
+              className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-4 sm:p-5 hover:border-white/[0.1] transition-colors"
             >
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
                 Project
@@ -56,12 +56,12 @@ export default async function ProjectsPage() {
       </section>
 
       {/* Cycles / Sprints */}
-      <section className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5">
+      <section className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-4 sm:p-5">
         <CyclesManager />
       </section>
 
       {/* Templates */}
-      <section className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5">
+      <section className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-4 sm:p-5">
         <TemplatesManager />
       </section>
     </div>

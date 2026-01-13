@@ -96,12 +96,12 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-8 max-w-6xl mx-auto">
       {/* Header */}
-      <div className="flex items-end justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4">
         <div>
           <p className="text-xs text-muted-foreground mb-0.5">{greeting}</p>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">Dashboard</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Dashboard</h1>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg glass-subtle">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg glass-subtle w-fit">
           <Clock size={14} className="text-muted-foreground" />
           <span className="text-xs text-muted-foreground">
             {new Date().toLocaleDateString("en-US", {
@@ -142,7 +142,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Main Grid - Balanced layout */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
         {/* Left Column - Upcoming */}
         <div className="lg:col-span-2 space-y-6">
           <section>
