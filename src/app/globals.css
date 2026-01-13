@@ -1018,11 +1018,45 @@ main:has(.page-full-bleed) {
 @media (max-width: 640px) {
   :root {
     --text-base: 0.9375rem; /* 15px for better mobile readability */
+    --sidebar-width: 0px; /* Hide sidebar on mobile */
   }
 
   /* Larger touch targets */
   button, a, [role="button"] {
     min-height: 44px;
+  }
+
+  /* Tighter spacing on mobile */
+  .page-container {
+    padding: var(--space-3);
+  }
+
+  /* Full width cards on mobile */
+  .grid-auto-fill {
+    grid-template-columns: 1fr;
+  }
+
+  /* Stack elements that are side-by-side */
+  .mobile-stack {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  /* Hide non-essential elements on mobile */
+  .mobile-hidden {
+    display: none !important;
+  }
+
+  /* Full width on mobile */
+  .mobile-full {
+    width: 100%;
+  }
+}
+
+/* Tablet-specific */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .page-container {
+    padding: var(--space-5);
   }
 }
 
