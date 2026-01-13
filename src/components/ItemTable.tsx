@@ -94,9 +94,9 @@ export function ItemTable({ title, items, emptyLabel, showHeader = true, onItemC
       )}
 
       <div className="rounded-lg border border-border bg-card overflow-hidden">
-        {/* Table Header */}
+        {/* Table Header - Hidden on mobile */}
         {showHeader && (
-          <div className="grid grid-cols-[32px_1fr_80px_80px_80px] gap-2 px-3 py-2 border-b border-border text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+          <div className="hidden sm:grid sm:grid-cols-[32px_1fr_80px_80px_80px] gap-2 px-3 py-2 border-b border-border text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
             <div></div>
             <div>Title</div>
             <div>Status</div>
@@ -118,70 +118,77 @@ export function ItemTable({ title, items, emptyLabel, showHeader = true, onItemC
                 key={item.id}
                 onClick={() => onItemClick?.(item)}
                 className={clsx(
-                  "group grid grid-cols-[32px_1fr_80px_80px_80px] gap-2 px-3 py-2.5 items-center transition-colors",
+                  "group flex flex-col gap-2 px-3 py-3 transition-colors",
+                  "sm:grid sm:grid-cols-[32px_1fr_80px_80px_80px] sm:gap-2 sm:py-2.5 sm:items-center",
                   onItemClick && "cursor-pointer hover:bg-accent/50"
                 )}
               >
-                {/* Checkbox */}
-                <button
-                  onClick={(e) => toggleComplete(item, e)}
-                  disabled={isCompleting}
-                  className={clsx(
-                    "w-5 h-5 rounded border flex items-center justify-center transition-all",
-                    isCompleted 
-                      ? "bg-[hsl(142_65%_48%)] border-[hsl(142_65%_48%)] text-white"
-                      : "border-border hover:border-muted-foreground",
-                    isCompleting && "opacity-50"
-                  )}
-                >
-                  {isCompleted && <Check size={12} strokeWidth={3} />}
-                </button>
+                {/* Mobile: Title row with checkbox */}
+                <div className="flex items-center gap-2 sm:contents">
+                  {/* Checkbox */}
+                  <button
+                    onClick={(e) => toggleComplete(item, e)}
+                    disabled={isCompleting}
+                    className={clsx(
+                      "w-5 h-5 rounded border flex items-center justify-center transition-all shrink-0",
+                      isCompleted
+                        ? "bg-[hsl(142_65%_48%)] border-[hsl(142_65%_48%)] text-white"
+                        : "border-border hover:border-muted-foreground",
+                      isCompleting && "opacity-50"
+                    )}
+                  >
+                    {isCompleted && <Check size={12} strokeWidth={3} />}
+                  </button>
 
-                {/* Title */}
-                <div className="flex items-center gap-2 min-w-0">
-                  <TypeIcon size={14} className="shrink-0 text-muted-foreground" />
-                  <span className={clsx(
-                    "text-sm truncate transition-colors",
-                    isCompleted 
-                      ? "text-muted-foreground line-through" 
-                      : "text-foreground group-hover:text-primary"
-                  )}>
-                    {item.title}
-                  </span>
-                </div>
-
-                {/* Status */}
-                <div className="flex items-center gap-1.5">
-                  <StatusDot status={item.status as any} />
-                  <span className="text-xs text-muted-foreground capitalize">
-                    {item.status === "not_started" ? "Todo" : item.status.replace("_", " ")}
-                  </span>
-                </div>
-
-                {/* Priority */}
-                <div className="flex items-center gap-1.5">
-                  {item.priority && (
-                    <>
-                      <PriorityIcon priority={item.priority as any} />
-                      <span className="text-xs text-muted-foreground capitalize hidden sm:inline">
-                        {item.priority}
-                      </span>
-                    </>
-                  )}
-                </div>
-
-                {/* Due Date */}
-                <div>
-                  {item.dueAt ? (
+                  {/* Title */}
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <TypeIcon size={14} className="shrink-0 text-muted-foreground" />
                     <span className={clsx(
-                      "text-xs",
-                      isOverdue ? "text-destructive font-medium" : "text-muted-foreground"
+                      "text-sm truncate transition-colors",
+                      isCompleted
+                        ? "text-muted-foreground line-through"
+                        : "text-foreground group-hover:text-primary"
                     )}>
-                      {formatDate(new Date(item.dueAt))}
+                      {item.title}
                     </span>
-                  ) : (
-                    <span className="text-xs text-muted-foreground/40">—</span>
-                  )}
+                  </div>
+                </div>
+
+                {/* Mobile: Meta row */}
+                <div className="flex items-center gap-3 pl-7 sm:contents">
+                  {/* Status */}
+                  <div className="flex items-center gap-1.5">
+                    <StatusDot status={item.status as any} />
+                    <span className="text-xs text-muted-foreground capitalize">
+                      {item.status === "not_started" ? "Todo" : item.status.replace("_", " ")}
+                    </span>
+                  </div>
+
+                  {/* Priority */}
+                  <div className="flex items-center gap-1.5">
+                    {item.priority && (
+                      <>
+                        <PriorityIcon priority={item.priority as any} />
+                        <span className="text-xs text-muted-foreground capitalize hidden sm:inline">
+                          {item.priority}
+                        </span>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Due Date */}
+                  <div className="ml-auto sm:ml-0">
+                    {item.dueAt ? (
+                      <span className={clsx(
+                        "text-xs",
+                        isOverdue ? "text-destructive font-medium" : "text-muted-foreground"
+                      )}>
+                        {formatDate(new Date(item.dueAt))}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground/40 hidden sm:inline">—</span>
+                    )}
+                  </div>
                 </div>
               </div>
             );

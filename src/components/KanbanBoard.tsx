@@ -223,7 +223,7 @@ export function KanbanBoard({ items, onItemClick }: KanbanBoardProps) {
       )}
 
       {/* Columns Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
         {columns.map((column) => {
           const columnItems = grouped[column.key];
           const completedInColumn = columnItems.filter(i => i.status === "completed").length;
@@ -267,7 +267,7 @@ export function KanbanBoard({ items, onItemClick }: KanbanBoardProps) {
               </div>
 
               {/* Cards Container */}
-              <div className="flex-1 p-2 space-y-2 overflow-y-auto max-h-[500px] min-h-[120px]">
+              <div className="flex-1 p-2 space-y-2 overflow-y-auto max-h-[400px] sm:max-h-[500px] min-h-[100px] sm:min-h-[120px]">
                 {columnItems.length === 0 ? (
                   <div className={clsx(
                     "h-20 border-2 border-dashed rounded-lg flex flex-col items-center justify-center gap-1 transition-colors",

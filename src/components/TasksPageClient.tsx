@@ -89,18 +89,18 @@ export function TasksPageClient({ items, suggestions }: TasksPageClientProps) {
   }, [items]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header with Filters and View Switcher */}
       <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-3">
             <FilterPopover
               initialChips={filterChips}
               onApply={setFilterChips}
               onClear={handleClearAll}
               counts={counts}
             />
-            <span className="text-sm text-muted-foreground">
+            <span className="text-xs sm:text-sm text-muted-foreground">
               {filteredItems.length} {filteredItems.length === 1 ? "task" : "tasks"}
             </span>
           </div>
@@ -113,18 +113,18 @@ export function TasksPageClient({ items, suggestions }: TasksPageClientProps) {
 
       {/* Suggestions */}
       {suggestions.length > 0 && (
-        <section className="rounded-lg border border-border bg-card p-4">
+        <section className="rounded-lg border border-border bg-card p-3 sm:p-4">
           <div className="flex items-center gap-2 mb-3">
             <Sparkles size={14} className="text-primary" />
-            <h3 className="text-sm font-medium text-foreground">Suggested Schedule</h3>
+            <h3 className="text-xs sm:text-sm font-medium text-foreground">Suggested Schedule</h3>
           </div>
           <div className="space-y-1.5">
             {suggestions.map((suggestion) => (
               <div
                 key={suggestion.itemId}
-                className="flex items-center justify-between gap-3 rounded-md border border-border bg-background px-3 py-2 text-sm"
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-3 rounded-md border border-border bg-background px-3 py-2 text-sm"
               >
-                <span className="text-foreground truncate">{suggestion.title}</span>
+                <span className="text-foreground truncate text-xs sm:text-sm">{suggestion.title}</span>
                 <span className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground shrink-0">
                   <Clock size={10} />
                   {suggestion.suggestedStart.slice(0, 16).replace("T", " ")}
